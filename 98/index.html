@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BaskinBros</title>
+  <link rel="stylesheet" href="https://unpkg.com/98.css" />
+
+  <!-- Meta / Social -->
+  <meta name="description" content="Welcome to BaskinBros – a collection of music, projects, and whatever else we feel like sharing. Check out our YouTube, SoundCloud, and GitHub!">
+  <meta name="keywords" content="BaskinBros, music, projects, YouTube, SoundCloud, GitHub">
+  <meta name="author" content="BaskinBros">
+  <meta property="og:title" content="BaskinBros">
+  <meta property="og:description" content="I make stuff, break stuff, and sometimes share stuff. Expect incomplete music ideas, random projects, bad coding, and whatever else.">
+  <meta property="og:url" content="https://baskinbros.com">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://baskinbros.com/images/og-image.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BaskinBros">
+  <meta name="twitter:description" content="Check out my YouTube, SoundCloud, and GitHub for my latest projects.">
+  <meta name="twitter:image" content="https://baskinbros.com/images/twitter-image.jpg">
+
+  <!-- Custom Style -->
+  <style>
+    body {
+      background: #008080;
+      margin: 0;
+      padding: 0;
+      font-family: 'Tahoma', sans-serif;
+    }
+
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 4px;
+      background: silver;
+      border-bottom: 2px inset #fff;
+      font-size: 0.7rem;
+      z-index: 999;
+    }
+
+    .barwrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .barlabel {
+      font-size: 0.7rem;
+    }
+
+    .barbox {
+      width: 100px;
+      height: 6px;
+      background: #000;
+      border: 2px inset #fff;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: #00f;
+    }
+
+    .window {
+      width: 540px;
+      position: absolute;
+      top: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+    }
+
+    .window-body {
+      padding: 1rem;
+    }
+
+    .link-buttons {
+      margin-top: 1rem;
+    }
+
+    .link-buttons a {
+      display: inline-block;
+      margin: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: 2px outset #fff;
+      background: #c0c0c0;
+      color: black;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+
+    .link-buttons a:hover {
+      background: #e0e0e0;
+    }
+
+    /* Start Menu Styling */
+    #startMenu a {
+      display: block;
+      padding: 4px 6px;
+      text-decoration: none;
+      color: black;
+      border: 1px solid transparent;
+      font-size: 0.85rem;
+    }
+
+    #startMenu a:hover {
+      background: #c0c0c0;
+      border: 1px outset #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar with timer -->
+  <div class="topbar">
+    <div class="barwrap">
+      <span class="barlabel" id="t">0.00</span>
+      <div class="barbox">
+        <div class="bar" id="b"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main window -->
+  <div class="window" id="mainWindow">
+    <div class="title-bar" id="titleBar">
+      <div class="title-bar-text">Welcome to BaskinBros</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize"></button>
+        <button aria-label="Maximize"></button>
+        <button aria-label="Close" onclick="document.getElementById('mainWindow').style.display='none'"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <p>I make stuff, break stuff, and sometimes share stuff. Expect incomplete music ideas, random projects, bad coding, and whatever else.</p>
+      <div class="link-buttons">
+        <a href="https://www.youtube.com/@BaskinBros">🎥 YouTube</a>
+        <a href="https://soundcloud.com/gojibran">🎵 SoundCloud</a>
+        <a href="https://github.com/GojiBran">💻 GitHub</a>
+        <a href="https://baskinbros.itch.io/grax">🎮 Grax</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full-width taskbar footer -->
+  <div style="position: fixed; bottom: 0; left: 0; width: 100%; background: silver; border-top: 2px outset white; padding: 2px 4px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; z-index: 999;">
+    <button class="button" onclick="toggleStartMenu()">Start</button>
+    <span id="footerClock">--:--</span>
+  </div>
+
+  <!-- Start menu popup -->
+  <div id="startMenu" style="
+    position: fixed;
+    bottom: 32px;
+    left: 0;
+    display: none;
+    z-index: 1000;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+  ">
+    <div style="display: flex; background: silver; border: 2px outset white;">
+      <!-- Blue sidebar -->
+      <div style="
+        width: 28px;
+        background: navy;
+        color: white;
+        writing-mode: vertical-rl;
+        text-align: center;
+        font-weight: bold;
+        padding: 4px 2px;
+        font-size: 0.75rem;
+        user-select: none;
+      ">
+        Programs
+      </div>
+      <!-- Menu body -->
+      <div style="min-width: 180px; padding: 6px;">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          <li><a href="https://www.youtube.com/@BaskinBros" target="_blank">🎥 YouTube</a></li>
+          <li><a href="https://soundcloud.com/gojibran" target="_blank">🎵 SoundCloud</a></li>
+          <li><a href="https://github.com/GojiBran" target="_blank">💻 GitHub</a></li>
+          <li><a href="https://baskinbros.itch.io/grax" target="_blank">🎮 Grax</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // Timer
+    onload = function () {
+      const t = (performance.now() / 1000).toFixed(2);
+      document.getElementById("t").textContent = t;
+      document.getElementById("b").style.width = Math.min(t, 1) * 100 + "%";
+    };
+
+    // Footer clock
+    function updateFooterClock() {
+      const now = new Date();
+      const clock = document.getElementById("footerClock");
+      if (clock) {
+        clock.textContent = now.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    }
+    setInterval(updateFooterClock, 1000);
+    updateFooterClock();
+
+    // Start menu toggle
+    function toggleStartMenu() {
+      const menu = document.getElementById("startMenu");
+      if (menu) {
+        menu.style.display = (menu.style.display === "block") ? "none" : "block";
+      }
+    }
+
+    // Drag window logic
+    const win = document.getElementById("mainWindow");
+    const bar = document.getElementById("titleBar");
+    let isDragging = false, offsetX = 0, offsetY = 0;
+
+    bar.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      offsetX = e.clientX - win.offsetLeft;
+      offsetY = e.clientY - win.offsetTop;
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (isDragging) {
+        win.style.left = e.clientX - offsetX + "px";
+        win.style.top = e.clientY - offsetY + "px";
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
+  </script>
+<script>
+// Close start menu when clicking outside
+document.addEventListener("click", (e) => {
+  const startBtn = document.querySelector("button[onclick='toggleStartMenu()']");
+  const startMenu = document.getElementById("startMenu");
+  if (startMenu && startMenu.style.display === "block") {
+    if (!startMenu.contains(e.target) && e.target !== startBtn) {
+      startMenu.style.display = "none";
+    }
+  }
+});
+</script>
+</body>
+</html>
