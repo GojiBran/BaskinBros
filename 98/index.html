@@ -7,11 +7,11 @@
   <link rel="stylesheet" href="https://unpkg.com/98.css" />
 
   <!-- Meta / Social -->
-  <meta name="description" content="Welcome to BaskinBros – a collection of music, projects, and whatever else we feel like sharing. Check out our YouTube, SoundCloud, and GitHub!">
+  <meta name="description" content="Welcome to BaskinBros – a collection of music, projects, and whatever else we feel like sharing.">
   <meta name="keywords" content="BaskinBros, music, projects, YouTube, SoundCloud, GitHub">
   <meta name="author" content="BaskinBros">
   <meta property="og:title" content="BaskinBros">
-  <meta property="og:description" content="I make stuff, break stuff, and sometimes share stuff. Expect incomplete music ideas, random projects, bad coding, and whatever else.">
+  <meta property="og:description" content="I make stuff, break stuff, and sometimes share stuff.">
   <meta property="og:url" content="https://baskinbros.com">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://baskinbros.com/images/og-image.jpg">
@@ -20,39 +20,24 @@
   <meta name="twitter:description" content="Check out my YouTube, SoundCloud, and GitHub for my latest projects.">
   <meta name="twitter:image" content="https://baskinbros.com/images/twitter-image.jpg">
 
-  <!-- Custom Style -->
   <style>
-    body {
-      background: #008080;
+    html, body {
       margin: 0;
       padding: 0;
+      height: 100%;
+      background: #008080;
       font-family: 'Tahoma', sans-serif;
+      overflow-x: hidden;
     }
 
     .topbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      padding: 4px;
-      background: silver;
-      border-bottom: 2px inset #fff;
-      font-size: 0.7rem;
-      z-index: 999;
+      display: none;
     }
 
     .barwrap {
       display: flex;
       align-items: center;
       gap: 4px;
-    }
-
-    .barlabel {
-      font-size: 0.7rem;
     }
 
     .barbox {
@@ -69,9 +54,9 @@
     }
 
     .window {
-      width: 540px;
+      max-width: 90vw;
       position: absolute;
-      top: 100px;
+      top: 80px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 100;
@@ -82,12 +67,14 @@
     }
 
     .link-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
       margin-top: 1rem;
+      gap: 8px;
     }
 
     .link-buttons a {
-      display: inline-block;
-      margin: 0.5rem;
       padding: 0.5rem 1rem;
       border: 2px outset #fff;
       background: #c0c0c0;
@@ -100,7 +87,6 @@
       background: #e0e0e0;
     }
 
-    /* Start Menu Styling */
     #startMenu a {
       display: block;
       padding: 4px 6px;
@@ -114,21 +100,46 @@
       background: #c0c0c0;
       border: 1px outset #fff;
     }
+
+    #startMenu {
+      position: fixed;
+      bottom: 36px;
+      left: 0;
+      display: none;
+      z-index: 1000;
+      max-height: 50vh;
+      overflow-y: auto;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .taskbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: silver;
+      border-top: 2px outset white;
+      padding: 4px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      z-index: 999;
+      box-sizing: border-box;
+    }
+
+    .taskbar-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 6px;
+      border: 2px inset #fff;
+      background: #c0c0c0;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Topbar with timer -->
-  <div class="topbar">
-    <div class="barwrap">
-      <span class="barlabel" id="t">0.00</span>
-      <div class="barbox">
-        <div class="bar" id="b"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main window -->
   <div class="window" id="mainWindow">
     <div class="title-bar" id="titleBar">
       <div class="title-bar-text">Welcome to BaskinBros</div>
@@ -149,38 +160,18 @@
     </div>
   </div>
 
-  <!-- Full-width taskbar footer -->
-  <div style="position: fixed; bottom: 0; left: 0; width: 100%; background: silver; border-top: 2px outset white; padding: 2px 4px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; z-index: 999;">
-    <button class="button" onclick="toggleStartMenu()">Start</button>
-    <span id="footerClock">--:--</span>
+  <div class="taskbar">
+    <button onclick="toggleStartMenu()">Start</button>
+    <div class="taskbar-right">
+      <span id="loadTime">0.00</span>
+      <span id="footerClock">--:--</span>
+    </div>
   </div>
 
-  <!-- Start menu popup -->
-  <div id="startMenu" style="
-    position: fixed;
-    bottom: 32px;
-    left: 0;
-    display: none;
-    z-index: 1000;
-    box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
-  ">
+  <div id="startMenu">
     <div style="display: flex; background: silver; border: 2px outset white;">
-      <!-- Blue sidebar -->
-      <div style="
-        width: 28px;
-        background: navy;
-        color: white;
-        writing-mode: vertical-rl;
-        text-align: center;
-        font-weight: bold;
-        padding: 4px 2px;
-        font-size: 0.75rem;
-        user-select: none;
-      ">
-        Programs
-      </div>
-      <!-- Menu body -->
-      <div style="min-width: 180px; padding: 6px;">
+      <div style="width: 28px; background: navy; color: white; writing-mode: vertical-rl; text-align: center; font-weight: bold; padding: 4px 2px; font-size: 0.75rem; user-select: none;">Programs</div>
+      <div style="min-width: 160px; padding: 6px;">
         <ul style="list-style: none; padding: 0; margin: 0;">
           <li><a href="https://www.youtube.com/@BaskinBros" target="_blank">🎥 YouTube</a></li>
           <li><a href="https://soundcloud.com/gojibran" target="_blank">🎵 SoundCloud</a></li>
@@ -191,38 +182,31 @@
     </div>
   </div>
 
-  <!-- JavaScript -->
   <script>
-    // Timer
-    onload = function () {
+    window.addEventListener("DOMContentLoaded", () => {
       const t = (performance.now() / 1000).toFixed(2);
-      document.getElementById("t").textContent = t;
-      document.getElementById("b").style.width = Math.min(t, 1) * 100 + "%";
-    };
+      const tEl = document.getElementById("loadTime");
+      if (tEl) tEl.textContent = t;
 
-    // Footer clock
-    function updateFooterClock() {
-      const now = new Date();
-      const clock = document.getElementById("footerClock");
-      if (clock) {
-        clock.textContent = now.toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+      function updateFooterClock() {
+        const now = new Date();
+        const clock = document.getElementById("footerClock");
+        if (clock) {
+          clock.textContent = now.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
       }
-    }
-    setInterval(updateFooterClock, 1000);
-    updateFooterClock();
+      setInterval(updateFooterClock, 1000);
+      updateFooterClock();
+    });
 
-    // Start menu toggle
     function toggleStartMenu() {
       const menu = document.getElementById("startMenu");
-      if (menu) {
-        menu.style.display = (menu.style.display === "block") ? "none" : "block";
-      }
+      if (menu) menu.style.display = (menu.style.display === "block") ? "none" : "block";
     }
 
-    // Drag window logic
     const win = document.getElementById("mainWindow");
     const bar = document.getElementById("titleBar");
     let isDragging = false, offsetX = 0, offsetY = 0;
@@ -240,21 +224,17 @@
       }
     });
 
-    document.addEventListener("mouseup", () => {
-      isDragging = false;
+    document.addEventListener("mouseup", () => isDragging = false);
+
+    document.addEventListener("click", (e) => {
+      const startBtn = document.querySelector("button[onclick='toggleStartMenu()']");
+      const startMenu = document.getElementById("startMenu");
+      if (startMenu && startMenu.style.display === "block") {
+        if (!startMenu.contains(e.target) && e.target !== startBtn) {
+          startMenu.style.display = "none";
+        }
+      }
     });
   </script>
-<script>
-// Close start menu when clicking outside
-document.addEventListener("click", (e) => {
-  const startBtn = document.querySelector("button[onclick='toggleStartMenu()']");
-  const startMenu = document.getElementById("startMenu");
-  if (startMenu && startMenu.style.display === "block") {
-    if (!startMenu.contains(e.target) && e.target !== startBtn) {
-      startMenu.style.display = "none";
-    }
-  }
-});
-</script>
 </body>
 </html>
