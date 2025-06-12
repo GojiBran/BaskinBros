@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SlugLuv</title>
+  <title>SlugLuv – Art</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/fslightbox/index.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -27,12 +28,6 @@
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
-    }
-
-    body {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
     }
 
     .crt-lines::before {
@@ -62,7 +57,6 @@
       cursor: pointer;
     }
 
-    /* === NAVBAR === */
     .navbar {
       display: flex;
       justify-content: space-between;
@@ -154,50 +148,6 @@
       background: rgba(255,255,255,0.05);
     }
 
-    /* === MOBILE MENU === */
-    .mobile-menu {
-      display: none;
-      flex-direction: column;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 1rem;
-      gap: 0.5rem;
-    }
-
-    .mobile-menu.open {
-      display: flex;
-    }
-
-    .mobile-menu a,
-    .mobile-menu .dropdown-btn {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.7rem;
-      color: #fff;
-      text-decoration: none;
-      padding: 0.8rem 1rem;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid #fff;
-      text-align: left;
-    }
-
-    .mobile-dropdown-content {
-      display: none;
-      flex-direction: column;
-      margin-top: 0.5rem;
-      padding-left: 1rem;
-      gap: 0.3rem;
-    }
-
-    .mobile-dropdown-content.open {
-      display: flex;
-    }
-
-    .mobile-dropdown-content a {
-      font-size: 0.65rem;
-      padding: 0.6rem 1rem;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid #ff71ce;
-    }
-
     @media (max-width: 768px) {
       .nav-links {
         display: none;
@@ -212,49 +162,42 @@
       }
     }
 
-    /* === MAIN CONTENT === */
     main {
       flex: 1;
-      padding: 3rem 1rem;
+      padding: 2rem;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
     }
 
-    main p {
-      max-width: 600px;
-      font-size: 0.7rem;
-      color: #fffb96;
-      text-shadow: 0 0 2px #ff71ce;
-      margin-bottom: 2rem;
+    main h2 {
+      font-size: 0.8rem;
+      margin-bottom: 1.5rem;
+      text-shadow: 0 0 4px #05ffa1;
     }
 
-    .main-buttons {
+    .gallery {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
       gap: 1rem;
+      justify-content: center;
     }
 
-    .main-buttons a {
-      text-decoration: none;
-      padding: 1rem 1.5rem;
+    .gallery a {
+      display: block;
+      width: 140px;
+      height: 140px;
+      overflow: hidden;
       border: 2px solid #fff;
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      font-size: 0.7rem;
-      text-shadow: 0 0 5px #01cdfe;
-      transition: 0.2s ease-in-out;
-      min-width: 140px;
-      text-align: center;
+      background: rgba(0, 0, 0, 0.3);
     }
 
-    .main-buttons a:hover,
-    .main-buttons a:focus {
-      background: #ff71ce;
-      color: #111;
-      border-color: #fff;
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     footer {
@@ -268,66 +211,38 @@
   </style>
 </head>
 <body class="crt-lines">
-
   <div class="navbar">
     <h1>🐌 SlugLuv</h1>
     <div class="navbar-right">
       <div class="nav-links">
-        <a href="#">Home</a>
+        <a href="index.html">Home</a>
         <div class="dropdown">
           <button class="dropdown-btn">Projects ▼</button>
           <div class="dropdown-content">
-            <a href="https://baskinbros.com/slugluv/art">🌸 Visual Art</a>
+            <a href="#">🌸 Visual Art</a>
             <a href="#">🎶 Music</a>
             <a href="#">🧠 Writing</a>
           </div>
         </div>
         <a href="#">Resume</a>
       </div>
-      <div class="hamburger" onclick="toggleMenu()">
-        <div></div>
-        <div></div>
-        <div></div>
-      </div>
     </div>
-  </div>
-
-  <!-- Mobile menu -->
-  <div class="mobile-menu" id="mobileMenu">
-    <a href="#">Home</a>
-    <div class="dropdown">
-      <button onclick="toggleDropdown()" class="dropdown-btn">Projects ▼</button>
-      <div class="mobile-dropdown-content" id="mobileDropdown">
-        <a href="https://baskinbros.com/slugluv/art">🌸 Visual Art</a>
-        <a href="#">🎶 Music</a>
-        <a href="#">🧠 Writing</a>
-      </div>
-    </div>
-    <a href="#">Resume</a>
   </div>
 
   <main>
-    <p>A portal of vibes, visions, and vapor. Dive into art, music, and more.</p>
-    <div class="main-buttons">
-      <a href="https://baskinbros.com/slugluv/art">🎨 Art</a>
-      <a href="#">📺 YouTube</a>
-      <a href="#">🧪 Projects</a>
+    <h2>🌸 Visual Art Gallery</h2>
+    <div class="gallery">
+      <a data-fslightbox="art" href="https://placekitten.com/800/800"><img src="https://placekitten.com/200/200" alt="Art 1"></a>
+      <a data-fslightbox="art" href="https://placekitten.com/801/801"><img src="https://placekitten.com/201/201" alt="Art 2"></a>
+      <a data-fslightbox="art" href="https://placekitten.com/802/802"><img src="https://placekitten.com/202/202" alt="Art 3"></a>
+      <a data-fslightbox="art" href="https://placekitten.com/803/803"><img src="https://placekitten.com/203/203" alt="Art 4"></a>
+      <a data-fslightbox="art" href="https://placekitten.com/804/804"><img src="https://placekitten.com/204/204" alt="Art 5"></a>
+      <a data-fslightbox="art" href="https://placekitten.com/805/805"><img src="https://placekitten.com/205/205" alt="Art 6"></a>
     </div>
   </main>
 
   <footer>
     © 2025 SlugLuv · Made with 💖 in the vaporzone
   </footer>
-
-  <script>
-    function toggleMenu() {
-      document.getElementById('mobileMenu').classList.toggle('open');
-    }
-
-    function toggleDropdown() {
-      document.getElementById('mobileDropdown').classList.toggle('open');
-    }
-  </script>
-
 </body>
 </html>
