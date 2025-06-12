@@ -35,7 +35,6 @@
       min-height: 100vh;
     }
 
-    /* Navbar */
     .navbar {
       background: rgba(0, 0, 0, 0.5);
       border-bottom: 2px solid #ff71ce;
@@ -46,14 +45,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 1rem;
       flex-wrap: wrap;
-    }
-
-    .navbar-left {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
     }
 
     .navbar h1 {
@@ -66,20 +58,20 @@
       display: none;
       flex-direction: column;
       cursor: pointer;
-      gap: 4px;
-      margin-left: auto;
+      gap: 5px;
     }
 
     .hamburger div {
-      width: 24px;
+      width: 26px;
       height: 3px;
       background: #fff;
     }
 
     .nav-links {
       display: flex;
-      gap: 0.5rem;
+      gap: 1rem;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .nav-item {
@@ -104,7 +96,6 @@
       border-color: #ff71ce;
     }
 
-    /* Dropdown */
     .dropdown-content {
       display: none;
       position: absolute;
@@ -199,17 +190,23 @@
       z-index: 999;
     }
 
-    /* Mobile adjustments */
+    /* Mobile Layout Fixes */
     @media (max-width: 768px) {
       .hamburger {
         display: flex;
+      }
+
+      .navbar {
+        flex-direction: row;
+        flex-wrap: wrap;
       }
 
       .nav-links {
         display: none;
         flex-direction: column;
         width: 100%;
-        margin-top: 0.5rem;
+        gap: 0;
+        padding: 0.5rem 0;
       }
 
       .nav-links.show {
@@ -218,36 +215,33 @@
 
       .nav-links a {
         width: 100%;
-        text-align: left;
+        padding: 1rem;
+        font-size: 0.7rem;
+        border-top: 1px solid rgba(255,255,255,0.2);
       }
 
-      .navbar {
-        flex-direction: column;
-        align-items: stretch;
+      .dropdown-content {
+        position: relative;
+        background: rgba(255,255,255,0.05);
+        border: none;
+        padding-left: 1rem;
       }
 
-      .navbar-left {
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .navbar h1 {
-        font-size: 0.9rem;
+      .dropdown-content a {
+        padding: 0.75rem 1rem;
+        font-size: 0.65rem;
+        border: none;
       }
     }
   </style>
 </head>
 <body class="crt-lines">
   <div class="navbar">
-    <div class="navbar-left">
-      <h1>🐌 SlugLuv</h1>
-      <div class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('show')">
-        <div></div>
-        <div></div>
-        <div></div>
-      </div>
+    <h1>🐌 SlugLuv</h1>
+    <div class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('show')">
+      <div></div>
+      <div></div>
+      <div></div>
     </div>
     <div class="nav-links">
       <div class="nav-item"><a href="#">Home</a></div>
@@ -278,5 +272,32 @@
   <footer>
     © 2025 SlugLuv · Made with 💖 in the vaporzone
   </footer>
+
+  <script>
+    const hamburger = document.querySelector('.hamburger');
+    const navLinks = document.querySelector('.nav-links');
+
+    hamburger.addEventListener('click', () => {
+      navLinks.classList.toggle('show');
+
+      // Close dropdowns on collapse
+      if (!navLinks.classList.contains('show')) {
+        document.querySelectorAll('.dropdown-content').forEach(el => {
+          el.style.display = 'none';
+        });
+      }
+    });
+
+    // Toggle dropdowns on mobile click
+    document.querySelectorAll('.nav-item > a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const dropdown = link.nextElementSibling;
+        if (dropdown && window.innerWidth <= 768) {
+          e.preventDefault();
+          dropdown.style.display = dropdown.style.display === 'flex' ? 'none' : 'flex';
+        }
+      });
+    });
+  </script>
 </body>
 </html>
