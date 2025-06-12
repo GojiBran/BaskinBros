@@ -1,108 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-        <title>BaskinBros</title>
-        <meta name="description" content="Welcome to SlugLuv – a collection of music, art, and other projects. Check out our YouTube!" />
-        <meta name="keywords" content="SlugLuv, music, art, projects, YouTube" />
-        <meta name="author" content="SlugLuv" />
-        <meta property="og:title" content="SlugLuv" />
-        <meta property="og:description" content="A collection of music, art, and other projects." />
-        <meta property="og:url" content="https://baskinbros.com" />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://baskinbros.com/images/og-image.jpg" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="SlugLuv" />
-        <meta name="twitter:description" content="A collection of music, art, and other projects. Check out our YouTube!" />
-        <meta name="twitter:image" content="https://baskinbros.com/images/twitter-image.jpg" />
-        <style>
-            body {
-                margin: 0;
-                padding: 2rem;
-                background: #fffb96;
-                color: #b967ff;
-                font-family: monospace;
-                text-align: center;
-            }
-            h1 {
-                margin-top: 3rem;
-                font-size: 1.2rem;
-                text-shadow: 0 0 5px #b967ff, 0 0 10px #b967ff;
-            }
-            p {
-                max-width: 600px;
-                margin: 1rem auto;
-                font-size: 0.8rem;
-            }
-            .l {
-                margin-top: 2rem;
-            }
-            .l a {
-                display: inline-block;
-                margin: 0.5rem;
-                padding: 0.7rem 1.2rem;
-                border: 2px solid #b967ff;
-                color: #b967ff;
-                text-decoration: none;
-                font-size: 0.7rem;
-            }
-            .topbar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 4px;
-                padding: 4px 8px;
-                background: #01cdfe;
-                font-size: 0.6rem;
-                border-bottom: 1px solid #ff71ce;
-                z-index: 999;
-            }
-            .barlabel {
-                font-size: 0.65rem;
-                opacity: 0.75;
-                color: #ff71ce;
-            }
-            .barwrap {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-            .barbox {
-                width: 100px;
-                height: 6px;
-                background: #111;
-                border: 1px solid #ff71ce;
-            }
-            .bar {
-                height: 100%;
-                width: 0%;
-                background: #ff71ce;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="topbar">
-            <div class="barwrap">
-                <span class="barlabel" id="t">0.00</span>
-                <div class="barbox"><div class="bar" id="b"></div></div>
-            </div>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SlugLuv</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Press Start 2P', monospace;
+      color: #fff;
+      background: linear-gradient(135deg, #ff71ce, #01cdfe, #05ffa1, #b967ff, #fffb96);
+      background-size: 400% 400%;
+      animation: gradientShift 20s ease infinite;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .navbar {
+      background: rgba(0, 0, 0, 0.5);
+      border-bottom: 2px solid #ff71ce;
+      padding: 0.5rem 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar h1 {
+      font-size: 1rem;
+      margin: 0;
+      text-shadow: 0 0 4px #b967ff;
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+      gap: 4px;
+    }
+
+    .hamburger div {
+      width: 24px;
+      height: 3px;
+      background: #fff;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .nav-item {
+      position: relative;
+    }
+
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.6rem;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid #fff;
+      background: rgba(255,255,255,0.1);
+      text-shadow: 0 0 3px #01cdfe;
+      transition: 0.2s ease-in-out;
+    }
+
+    .nav-links a:hover,
+    .nav-links a:focus {
+      background: #01cdfe;
+      color: #111;
+      border-color: #ff71ce;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: rgba(0, 0, 0, 0.95);
+      border: 1px solid #ff71ce;
+      min-width: 160px;
+      flex-direction: column;
+      z-index: 1001;
+    }
+
+    .dropdown-content a {
+      font-size: 0.6rem;
+      padding: 0.6rem;
+      border-bottom: 1px solid #ff71ce;
+    }
+
+    .nav-item:hover .dropdown-content,
+    .nav-item:focus-within .dropdown-content {
+      display: flex;
+    }
+
+    main {
+      flex: 1;
+      padding: 3rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    main p {
+      max-width: 600px;
+      font-size: 0.7rem;
+      color: #fffb96;
+      text-shadow: 0 0 2px #ff71ce;
+      margin-bottom: 2rem;
+    }
+
+    .main-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .main-buttons a {
+      text-decoration: none;
+      padding: 1rem 1.5rem;
+      border: 2px solid #fff;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 0.7rem;
+      text-shadow: 0 0 5px #01cdfe;
+      transition: 0.2s ease-in-out;
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .main-buttons a:hover,
+    .main-buttons a:focus {
+      background: #ff71ce;
+      color: #111;
+      border-color: #fff;
+    }
+
+    footer {
+      background: rgba(0, 0, 0, 0.3);
+      text-align: center;
+      padding: 0.5rem;
+      font-size: 0.5rem;
+      color: #fff;
+      border-top: 2px solid #b967ff;
+    }
+
+    .crt-lines::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.03),
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    @media (max-width: 768px) {
+      .hamburger {
+        display: flex;
+      }
+
+      .nav-links {
+        flex-direction: column;
+        width: 100%;
+        display: none;
+        margin-top: 0.5rem;
+      }
+
+      .nav-links.show {
+        display: flex;
+      }
+
+      .nav-links a {
+        width: 100%;
+      }
+
+      .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .navbar h1 {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body class="crt-lines">
+  <div class="navbar">
+    <h1>🐌 SlugLuv</h1>
+    <div class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('show')">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+    <div class="nav-links">
+      <div class="nav-item"><a href="#">Home</a></div>
+      <div class="nav-item">
+        <a href="#">Projects ▼</a>
+        <div class="dropdown-content">
+          <a href="#">🌸 Visual Art</a>
+          <a href="#">🎶 Music</a>
+          <a href="#">🧠 Writing</a>
         </div>
-        <h1>Welcome to SlugLuv</h1>
-        <p>A collection of music, art, and other projects. Check out our YouTube!</p>
-        <div class="l">
-            <a href="https://www.youtube.com/@RIS33">🎥 YouTube</a>
-        </div>
-        <script>
-            onload = function () {
-                var t = (performance.now() / 1e3).toFixed(2);
-                document.getElementById("t").textContent = t;
-                document.getElementById("b").style.width = Math.min(t, 1) * 100 + "%";
-            };
-        </script>
-    </body>
+      </div>
+      <div class="nav-item"><a href="#">Resume</a></div>
+      <div class="nav-item"><a href="#">Contact</a></div>
+    </div>
+  </div>
+
+  <main>
+    <p>A portal of vibes, visions, and vapor. Dive into art, music, and more.</p>
+    <div class="main-buttons">
+      <a href="#">🎨 Art</a>
+      <a href="#">📺 YouTube</a>
+      <a href="#">🧪 Projects</a>
+      <a href="#">📄 Resume</a>
+      <a href="#">🌐 Contact</a>
+    </div>
+  </main>
+
+  <footer>
+    © 2025 SlugLuv · Made with 💖 in the vaporzone
+  </footer>
+</body>
 </html>
