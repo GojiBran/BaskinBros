@@ -35,16 +35,25 @@
       min-height: 100vh;
     }
 
+    /* Navbar */
     .navbar {
       background: rgba(0, 0, 0, 0.5);
       border-bottom: 2px solid #ff71ce;
-      padding: 0.5rem 1rem;
+      padding: 0.8rem 1rem;
       position: sticky;
       top: 0;
       z-index: 1000;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .navbar-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
     }
 
     .navbar h1 {
@@ -58,6 +67,7 @@
       flex-direction: column;
       cursor: pointer;
       gap: 4px;
+      margin-left: auto;
     }
 
     .hamburger div {
@@ -94,6 +104,7 @@
       border-color: #ff71ce;
     }
 
+    /* Dropdown */
     .dropdown-content {
       display: none;
       position: absolute;
@@ -188,15 +199,16 @@
       z-index: 999;
     }
 
+    /* Mobile adjustments */
     @media (max-width: 768px) {
       .hamburger {
         display: flex;
       }
 
       .nav-links {
+        display: none;
         flex-direction: column;
         width: 100%;
-        display: none;
         margin-top: 0.5rem;
       }
 
@@ -206,27 +218,36 @@
 
       .nav-links a {
         width: 100%;
+        text-align: left;
       }
 
       .navbar {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
+      }
+
+      .navbar-left {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
 
       .navbar h1 {
         font-size: 0.9rem;
-        margin-bottom: 0.5rem;
       }
     }
   </style>
 </head>
 <body class="crt-lines">
   <div class="navbar">
-    <h1>🐌 SlugLuv</h1>
-    <div class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('show')">
-      <div></div>
-      <div></div>
-      <div></div>
+    <div class="navbar-left">
+      <h1>🐌 SlugLuv</h1>
+      <div class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('show')">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
     </div>
     <div class="nav-links">
       <div class="nav-item"><a href="#">Home</a></div>
