@@ -21,6 +21,7 @@
       animation: gradientShift 20s ease infinite;
       display: flex;
       flex-direction: column;
+      scroll-behavior: smooth;
     }
 
     @keyframes gradientShift {
@@ -30,8 +31,6 @@
     }
 
     body {
-      display: flex;
-      flex-direction: column;
       min-height: 100vh;
     }
 
@@ -60,6 +59,43 @@
       border: none;
       padding: 0;
       cursor: pointer;
+    }
+
+    /* === ANIMATIONS === */
+    .fade-in {
+      opacity: 0;
+      animation: fadeIn ease 2s forwards;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .slide-in {
+      opacity: 0;
+      animation: slideIn 1.8s ease forwards;
+    }
+
+    @keyframes slideIn {
+      0% { opacity: 0; transform: translateX(-40px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+
+    .glow-hover:hover {
+      box-shadow: 0 0 8px 3px #fffb96, 0 0 12px 5px #01cdfe;
+      background-color: #fffb96 !important;
+      color: #111 !important;
+      border-color: #fff;
+    }
+
+    .pulse {
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
     }
 
     /* === NAVBAR === */
@@ -210,9 +246,13 @@
       .dropdown:hover .dropdown-content {
         display: none;
       }
+
+      .media-highlight {
+        flex-direction: column;
+        align-items: center;
+      }
     }
 
-    /* === MAIN CONTENT === */
     main {
       flex: 1;
       padding: 3rem 1rem;
@@ -235,6 +275,7 @@
       flex-wrap: wrap;
       justify-content: center;
       gap: 1rem;
+      margin: 2rem 0;
     }
 
     .main-buttons a {
@@ -250,11 +291,45 @@
       text-align: center;
     }
 
-    .main-buttons a:hover,
-    .main-buttons a:focus {
+    .main-buttons a:hover {
       background: #ff71ce;
       color: #111;
       border-color: #fff;
+    }
+
+    .media-highlight {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+
+    .media-item {
+      flex: 1 1 300px;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .media-item iframe,
+    .media-item img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px #01cdfe;
+      background: #000;
+      transition: transform 0.3s;
+    }
+
+    .media-item img:hover {
+      transform: scale(1.03);
+    }
+
+    .media-item p {
+      font-size: 0.6rem;
+      margin-top: 0.5rem;
+      color: #fffb96;
+      text-shadow: 0 0 2px #b967ff;
     }
 
     footer {
@@ -277,42 +352,55 @@
         <div class="dropdown">
           <button class="dropdown-btn">Projects ▼</button>
           <div class="dropdown-content">
-            <a href="https://baskinbros.com/slugluv/art">🌸 Visual Art</a>
-            <a href="#">🎶 Music</a>
-            <a href="#">🧠 Writing</a>
+            <a href="https://baskinbros.com/slugluv/art">🎨 Art</a>
+            <a href="https://www.youtube.com/@slugluvvv">📺 YouTube</a>
+            <a href="#">🧠 Random</a>
           </div>
         </div>
-        <a href="#">Resume</a>
+        <!--<a href="#">Resume</a>-->
       </div>
       <div class="hamburger" onclick="toggleMenu()">
-        <div></div>
-        <div></div>
-        <div></div>
+        <div></div><div></div><div></div>
       </div>
     </div>
   </div>
 
-  <!-- Mobile menu -->
   <div class="mobile-menu" id="mobileMenu">
     <a href="#">Home</a>
     <div class="dropdown">
       <button onclick="toggleDropdown()" class="dropdown-btn">Projects ▼</button>
       <div class="mobile-dropdown-content" id="mobileDropdown">
-        <a href="https://baskinbros.com/slugluv/art">🌸 Visual Art</a>
-        <a href="#">🎶 Music</a>
-        <a href="#">🧠 Writing</a>
+        <a href="https://baskinbros.com/slugluv/art">🎨 Art</a>
+        <a href="https://www.youtube.com/@slugluvvv">📺 YouTube</a>
+        <a href="#">🧠 Random</a>
       </div>
     </div>
-    <a href="#">Resume</a>
+    <!--<a href="#">Resume</a>-->
   </div>
 
   <main>
-    <p>A portal of vibes, visions, and vapor. Dive into art, music, and more.</p>
-    <div class="main-buttons">
-      <a href="https://baskinbros.com/slugluv/art">🎨 Art</a>
-      <a href="https://www.youtube.com/@RIS33">📺 YouTube</a>
-      <a href="#">🧪 Projects</a>
+    <p class="fade-in">A portal of vibes, visions, and vapor. Dive into art, music, and more.</p>
+
+    <div class="main-buttons fade-in">
+      <a class="glow-hover" href="https://baskinbros.com/slugluv/art">🎨 Art</a>
+      <a class="glow-hover" href="https://www.youtube.com/@slugluvvv">📺 YouTube</a>
+      <a class="glow-hover" href="#">🧠 Random</a>
     </div>
+
+    <section class="media-highlight">
+      <div class="media-item slide-in">
+        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video" frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+        <p>📺 Visit my <a href="https://www.youtube.com/@slugluvvv" target="_blank">YouTube channel</a>!</p>
+      </div>
+      <div class="media-item slide-in">
+        <a href="https://baskinbros.com/slugluv/art">
+          <img class="pulse" src="https://baskinbros.com/slugluv/art/images/resize/image20.jpg" alt="Art Preview">
+        </a>
+        <p>🎨 Browse the <a href="https://baskinbros.com/slugluv/art">Art Gallery</a>!</p>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -323,7 +411,6 @@
     function toggleMenu() {
       document.getElementById('mobileMenu').classList.toggle('open');
     }
-
     function toggleDropdown() {
       document.getElementById('mobileDropdown').classList.toggle('open');
     }
