@@ -65,17 +65,43 @@
       display: block;
     }
 
+    .social-icons a {
+      margin: 0 10px;
+      font-size: 1.5rem;
+      color: #fff;
+      transition: transform 0.3s ease;
+    }
+    .social-icons a:hover {
+      transform: scale(1.2);
+      color: #ff71ce;
+      text-shadow: 0 0 8px #ff71ce;
+    }
     footer {
       background: #111;
+      padding: 20px 0;
       text-align: center;
-      padding: 1rem;
-      font-size: 0.85rem;
-      color: #fff;
-      border-top: 2px solid #b967ff;
+      font-size: 0.9rem;
+      opacity: 0.8;
     }
   </style>
 </head>
 <body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Shoe Slug</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="https://baskinbros.com/slugluv/concept2/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="https://baskinbros.com/slugluv/concept2/gallery/">Art Gallery</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
   <!-- GALLERY TITLE -->
   <div class="gallery-title">
@@ -118,9 +144,24 @@
       <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image31.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image31.jpg" alt="Art 32"></a>
     </div>
 
+    <!-- SOCIAL LINKS -->
+    <section class="text-center my-5">
+      <h2>Connect with Me</h2>
+      <div class="social-icons mt-3">
+        <a href="https://youtube.com/" target="_blank" title="YouTube"><i class="bi bi-youtube"></i></a>
+        <a href="https://spotify.com/" target="_blank" title="Spotify"><i class="bi bi-spotify"></i></a>
+        <a href="https://soundcloud.com/" target="_blank" title="SoundCloud"><i class="bi bi-soundwave"></i></a>
+        <a href="https://instagram.com/" target="_blank" title="Instagram"><i class="bi bi-instagram"></i></a>
+        <a href="https://facebook.com/" target="_blank" title="Facebook"><i class="bi bi-facebook"></i></a>
+      </div>
+    </section>
+
+  <!-- FOOTER -->
   <footer>
-    &copy; 2025 Shoe Slug · Made with 💖 in the vaporzone
+    <p>&copy; 2025 Shoe Slug. All rights reserved.</p>
   </footer>
 
+  <!-- BOOTSTRAP & ICONS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
