@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shoe Slug – Gallery</title>
+  <meta name="description" content="Shoe Slug's visual art gallery. Explore vaporcore visuals and vibrant chaos.">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/fslightbox/index.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: linear-gradient(-45deg, #ff71ce, #01cdfe, #05ffa1, #b967ff, #fffb96);
+      background-size: 400% 400%;
+      animation: gradientShift 40s ease infinite;
+      color: #fff;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .gallery-title {
+      padding: 60px 0 20px;
+      text-align: center;
+      text-shadow: 2px 2px 4px #000;
+    }
+
+    .gallery-title h1 {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .gallery {
+      padding: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .gallery a {
+      display: block;
+      width: 160px;
+      height: 160px;
+      overflow: hidden;
+      border: 2px solid #fff;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .gallery a:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 12px #ff71ce;
+    }
+
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    footer {
+      background: #111;
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.85rem;
+      color: #fff;
+      border-top: 2px solid #b967ff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- GALLERY TITLE -->
+  <div class="gallery-title">
+    <h1>🌸 Shoe Slug's Visual Art Gallery</h1>
+    <p class="lead">Click any image to open fullscreen</p>
+  </div>
+
+  <!-- GALLERY GRID -->
+    <div class="gallery">
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image0.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image0.jpg" alt="Art 1"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image1.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image1.jpg" alt="Art 2"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image2.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image2.jpg" alt="Art 3"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image3.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image3.jpg" alt="Art 4"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image4.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image4.jpg" alt="Art 5"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image5.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image5.jpg" alt="Art 6"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image6.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image6.jpg" alt="Art 7"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image7.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image7.jpg" alt="Art 8"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image8.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image8.jpg" alt="Art 9"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image9.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image9.jpg" alt="Art 10"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image10.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image10.jpg" alt="Art 11"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image11.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image11.jpg" alt="Art 12"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image12.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image12.jpg" alt="Art 13"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image13.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image13.jpg" alt="Art 14"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image14.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image14.jpg" alt="Art 15"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image15.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image15.jpg" alt="Art 16"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image16.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image16.jpg" alt="Art 17"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image17.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image17.jpg" alt="Art 18"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image19.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image19.jpg" alt="Art 20"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image20.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image20.jpg" alt="Art 21"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image21.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image21.jpg" alt="Art 22"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image22.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image22.jpg" alt="Art 23"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image23.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image23.jpg" alt="Art 24"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image24.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image24.jpg" alt="Art 25"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image25.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image25.jpg" alt="Art 26"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image26.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image26.jpg" alt="Art 27"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image27.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image27.jpg" alt="Art 28"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image28.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image28.jpg" alt="Art 29"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image29.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image29.jpg" alt="Art 30"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image30.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image30.jpg" alt="Art 31"></a>
+      <a data-fslightbox="art" href="https://baskinbros.com/slugluv/art/images/image31.jpg"><img src="https://baskinbros.com/slugluv/art/images/resize/image31.jpg" alt="Art 32"></a>
+    </div>
+
+  <footer>
+    &copy; 2025 Shoe Slug · Made with 💖 in the vaporzone
+  </footer>
+
+</body>
+</html>
