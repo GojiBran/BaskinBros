@@ -12,6 +12,8 @@
       background-color: #0d0d0d;
       color: #fff;
     }
+
+    /* Navbar logo */
     .navbar-brand {
       font-weight: bold;
       background: linear-gradient(-45deg, #ff71ce, #01cdfe, #05ffa1, #b967ff, #fffb96);
@@ -19,41 +21,53 @@
       animation: gradientShift 120s ease infinite;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      color: #ff71ce;
       text-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
     }
-    .hero {
-      padding: 100px 0;
-      text-align: center;
+
+    /* Gradient animation */
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Hero section text styling */
+    .hero h1,
+    .hero p {
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Gradient text effect */
+    .gradient-text {
+      font-weight: bold;
       background: linear-gradient(-45deg, #ff71ce, #01cdfe, #05ffa1, #b967ff, #fffb96);
       background-size: 400% 400%;
       animation: gradientShift 120s ease infinite;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: #ff71ce; /* fallback */
+      text-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
     }
 
-    @keyframes gradientShift {
-      0% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
-      100% {
-        background-position: 0% 50%;
-      }
-    }
-    .hero h1, .hero p {
-      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
-    }
+    /* Social icons style */
     .social-icons a {
       margin: 0 10px;
       font-size: 1.5rem;
       color: #fff;
-      transition: transform 0.3s ease;
+      transition: transform 0.3s ease, text-shadow 0.3s ease;
     }
+
     .social-icons a:hover {
       transform: scale(1.2);
       color: #ff71ce;
-      text-shadow: 0 0 8px #ff71ce;
+      text-shadow:
+        0 0 6px #ff71ce,
+        0 0 12px #01cdfe,
+        0 0 18px #05ffa1;
     }
+
+    /* Footer styling */
     footer {
       background: #111;
       padding: 20px 0;
@@ -119,7 +133,7 @@
 
     <!-- SOCIAL LINKS -->
     <section class="text-center my-5">
-      <h2>Connect with Me</h2>
+      <h2 class="gradient-text">Connect with Me</h2>
       <div class="social-icons mt-3">
         <a href="https://www.youtube.com/@shoeslug" target="_blank" title="YouTube"><i class="bi bi-youtube"></i></a>
         <a href="https://open.spotify.com/artist/24RpTxky0ibb9ixlyRcLCm" target="_blank" title="Spotify"><i class="bi bi-spotify"></i></a>
