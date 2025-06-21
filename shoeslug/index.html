@@ -100,20 +100,57 @@
       50% { transform: scale(1.2); opacity: 0.5; }
     }
 
+    @keyframes flicker {
+      0%, 18%, 22%, 25%, 50%, 54%, 100% {
+        opacity: 1;
+        text-shadow:
+          0 0 2px #ff71ce,
+          0 0 5px #01cdfe,
+          0 0 8px #05ffa1;
+      }
+      20%, 24%, 52% {
+        opacity: 0.8;
+        text-shadow:
+          0 0 1px #b967ff,
+          0 0 3px #fffb96;
+      }
+      56%, 58%, 60% {
+        opacity: 0.5;
+        text-shadow: none;
+      }
+    }
+
+    @keyframes rainbowFlicker {
+      0%, 100% {
+        opacity: 1;
+        color: hsl(var(--hue), 100%, 70%);
+        filter: drop-shadow(0 0 2px hsl(var(--hue), 100%, 70%)) drop-shadow(0 0 4px hsl(calc(var(--hue) + 60), 100%, 70%));
+      }
+      50% {
+        opacity: 0.5;
+        color: hsl(calc(var(--hue) + 180), 100%, 70%);
+        filter: drop-shadow(0 0 1px hsl(calc(var(--hue) + 180), 100%, 70%));
+      }
+    }
+
     #hero-title span {
       display: inline-block;
-      transition: transform 0.3s ease;
+      opacity: 0;
+      transform: translateY(30px);
+      animation:
+        slideIn 0.6s ease-out forwards var(--i-delay),
+        rainbowFlicker 3s infinite ease-in-out;
+      --i-delay: calc(var(--i) * 0.1s);
+      animation-delay: var(--i-delay), calc(var(--i) * 0.1s + 2s);
+      --hue: calc(var(--i) * 40); /* rainbow offset */
     }
 
-    @keyframes bounceLetter {
-      0%   { transform: translateY(0); }
-      30%  { transform: translateY(-20px); }
-      60%  { transform: translateY(10px); }
-      100% { transform: translateY(0); }
-    }
-
-    .bounce {
-      animation: bounceLetter 0.6s ease;
+    @keyframes slideIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        text-shadow: 0 0 4px #ff71ce, 0 0 10px #01cdfe;
+      }
     }
 
     .hero h1 {
@@ -228,9 +265,9 @@
   <section class="hero">
     <div class="container position-relative z-2">
       <h1 id="hero-title">
-        <span>S</span><span>h</span><span>o</span><span>e</span>
-        <span> </span>
-        <span>S</span><span>l</span><span>u</span><span>g</span>
+        <span style="--i:0">S</span><span style="--i:1">h</span><span style="--i:2">o</span><span style="--i:3">e</span>
+        <span style="--i:4"> </span>
+        <span style="--i:5">S</span><span style="--i:6">l</span><span style="--i:7">u</span><span style="--i:8">g</span>
       </h1>
 
       <h3>🎶 Music. 🎨 Art. ✨ Vibes.</h3>
@@ -417,18 +454,6 @@
       },
       "retina_detect": true
     });
-  </script>
-
-  <script>
-    const heroSpans = document.querySelectorAll("#hero-title span");
-
-    setInterval(() => {
-      const randomSpan = heroSpans[Math.floor(Math.random() * heroSpans.length)];
-      randomSpan.classList.add("bounce");
-      setTimeout(() => {
-        randomSpan.classList.remove("bounce");
-      }, 600); // match animation duration
-    }, 2000); // every 400ms, adjust for chaos level
   </script>
 
     <!-- Idle Mini-Game (Starts After 60 Seconds, Persistent) -->
