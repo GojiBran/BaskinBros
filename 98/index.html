@@ -3,77 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BaskinBros</title>
+  <title>BaskinBros OS</title>
   <link rel="stylesheet" href="https://unpkg.com/98.css" />
-
-  <!-- Meta / Social -->
-  <meta name="description" content="Welcome to BaskinBros – a collection of music, projects, and whatever else we feel like sharing.">
-  <meta name="keywords" content="BaskinBros, music, projects, YouTube, SoundCloud, GitHub">
-  <meta name="author" content="BaskinBros">
-  <meta property="og:title" content="BaskinBros">
-  <meta property="og:description" content="I make stuff, break stuff, and sometimes share stuff.">
-  <meta property="og:url" content="https://baskinbros.com">
-  <meta property="og:type" content="website">
-  <meta property="og:image" content="https://baskinbros.com/images/og-image.jpg">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="BaskinBros">
-  <meta name="twitter:description" content="Check out my YouTube, SoundCloud, and GitHub for my latest projects.">
-  <meta name="twitter:image" content="https://baskinbros.com/images/twitter-image.jpg">
-
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
+      margin: 0; padding: 0; height: 100%;
       background: #008080;
       font-family: 'Tahoma', sans-serif;
       overflow-x: hidden;
     }
-
-    .topbar {
-      display: none;
-    }
-
-    .barwrap {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .barbox {
-      width: 100px;
-      height: 6px;
-      background: #000;
-      border: 2px inset #fff;
-    }
-
-    .bar {
-      height: 100%;
-      width: 0%;
-      background: #00f;
-    }
-
-    .window {
-      max-width: 90vw;
-      position: absolute;
-      top: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 100;
-    }
-
-    .window-body {
-      padding: 1rem;
-    }
-
-    .link-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 1rem;
-      gap: 8px;
-    }
-
+    .window { position: absolute; max-width: 600px; }
+    .window-body { padding: 1rem; }
     .link-buttons a {
       padding: 0.5rem 1rem;
       border: 2px outset #fff;
@@ -82,159 +23,324 @@
       text-decoration: none;
       font-size: 0.85rem;
     }
-
-    .link-buttons a:hover {
-      background: #e0e0e0;
+    .link-buttons a:hover { background: #e0e0e0; }
+    .hidden { display: none !important; }
+    .taskbar {
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background: silver; border-top: 2px outset white;
+      padding: 4px 8px; display: flex; justify-content: space-between;
+      align-items: center; font-size: 0.75rem; z-index: 999;
     }
-
+    .taskbar-left { display: flex; align-items: center; gap: 4px; }
+    .taskbar-apps { display: flex; gap: 4px; }
+    .taskbar-app-button {
+      padding: 2px 8px; font-size: 0.75rem;
+      background: #c0c0c0; border: 2px outset white;
+      cursor: pointer; white-space: nowrap;
+    }
+    .taskbar-app-button.active {
+      border: 2px inset #fff; background: #a0a0a0;
+    }
+    .taskbar-right {
+      display: flex; align-items: center; gap: 6px;
+      padding: 2px 6px; border: 2px inset #fff;
+      background: #c0c0c0;
+    }
+    #startMenu {
+      position: fixed; bottom: 36px; left: 0;
+      display: none; z-index: 1000;
+      background: silver; border: 2px outset white;
+      max-height: 60vh; overflow-y: auto;
+    }
     #startMenu a {
-      display: block;
-      padding: 4px 6px;
-      text-decoration: none;
-      color: black;
-      border: 1px solid transparent;
+      display: block; padding: 4px 6px;
+      text-decoration: none; color: black;
       font-size: 0.85rem;
     }
-
-    #startMenu a:hover {
-      background: #c0c0c0;
-      border: 1px outset #fff;
+    #startMenu a:hover { background: #c0c0c0; border: 1px outset #fff; }
+    .start-sidebar {
+      width: 28px; background: navy; color: white;
+      writing-mode: vertical-rl; text-align: center;
+      font-weight: bold; padding: 4px 2px; font-size: 0.75rem;
     }
 
-    #startMenu {
-      position: fixed;
-      bottom: 36px;
-      left: 0;
-      display: none;
-      z-index: 1000;
-      max-height: 50vh;
-      overflow-y: auto;
-      box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+    /* Start button hover */
+    .taskbar-left button:hover {
+      background: #d0d0d0;
+      border: 2px outset #fff;
+      cursor: pointer;
     }
 
-    .taskbar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: silver;
-      border-top: 2px outset white;
-      padding: 4px 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.75rem;
-      z-index: 999;
-      box-sizing: border-box;
+    /* Taskbar app buttons hover */
+    .taskbar-app-button:hover:not(.active) {
+      background: #dcdcdc;
+      border: 2px outset #fff;
     }
 
-    .taskbar-right {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 2px 6px;
-      border: 2px inset #fff;
-      background: #c0c0c0;
+    @media (max-width: 768px) {
+      .window {
+        width: 90% !important;
+        left: 5% !important;
+        transform: none !important;
+      }
+      .taskbar {
+        flex-wrap: wrap;
+        font-size: 0.7rem;
+      }
+      .taskbar-apps {
+        flex-wrap: wrap;
+      }
+      #startMenu {
+        max-height: 40vh;
+        font-size: 0.75rem;
+      }
     }
   </style>
 </head>
 <body>
 
-  <div class="window" id="mainWindow">
-    <div class="title-bar" id="titleBar">
-      <div class="title-bar-text">Welcome to BaskinBros</div>
+  <!-- GOJI Window -->
+  <div class="window" id="gojiWindow" data-title="Goji" data-default-top="40" data-default-z="102">
+    <div class="title-bar">
+      <div class="title-bar-text">
+        <img src="/favicon.ico" style="height: 16px; vertical-align: middle; margin-right: 4px;" />
+        Goji
+      </div>
       <div class="title-bar-controls">
         <button aria-label="Minimize"></button>
         <button aria-label="Maximize"></button>
-        <button aria-label="Close" onclick="document.getElementById('mainWindow').style.display='none'"></button>
+        <button aria-label="Close"></button>
       </div>
     </div>
-    <div class="window-body">
-      <p>I make stuff, break stuff, and sometimes share stuff. Expect incomplete music ideas, random projects, bad coding, and whatever else.</p>
-      <div class="link-buttons">
-        <a href="https://www.youtube.com/@BaskinBros">🎥 YouTube</a>
-        <a href="https://soundcloud.com/gojibran">🎵 SoundCloud</a>
-        <a href="https://github.com/GojiBran">💻 GitHub</a>
-        <a href="https://baskinbros.itch.io/grax">🎮 Grax</a>
-      </div>
+    <div class="window-body link-buttons d-flex flex-column gap-2">
+      <a href="https://www.youtube.com/@BaskinBros" target="_blank">🎥 YouTube</a>
+      <a href="https://soundcloud.com/gojibran" target="_blank">🎵 SoundCloud</a>
+      <a href="https://github.com/GojiBran" target="_blank">💻 GitHub</a>
+      <a href="https://baskinbros.itch.io/grax" target="_blank">🎮 Grax Game</a>
     </div>
   </div>
 
+  <!-- YOUTUBE Window -->
+  <div class="window hidden" id="ytWindow" data-title="YouTube" data-default-top="80" data-default-z="101">
+    <div class="title-bar">
+      <div class="title-bar-text">YouTube</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize"></button>
+        <button aria-label="Maximize"></button>
+        <button aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <p>Watch videos by BaskinBros:</p>
+      <a href="https://www.youtube.com/@BaskinBros" target="_blank">🎥 youtube.com/@BaskinBros</a>
+    </div>
+  </div>
+
+  <!-- SOUNDCLOUD Window -->
+  <div class="window hidden" id="scWindow" data-title="SoundCloud" data-default-top="160" data-default-z="101">
+    <div class="title-bar">
+      <div class="title-bar-text">SoundCloud</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize"></button>
+        <button aria-label="Maximize"></button>
+        <button aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <p>Music from Goji:</p>
+      <a href="https://soundcloud.com/gojibran" target="_blank">🎵 soundcloud.com/gojibran</a>
+    </div>
+  </div>
+
+  <!-- GITHUB Window -->
+  <div class="window hidden" id="gitWindow" data-title="GitHub" data-default-top="240" data-default-z="101">
+    <div class="title-bar">
+      <div class="title-bar-text">GitHub</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize"></button>
+        <button aria-label="Maximize"></button>
+        <button aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <p>Code projects by Goji:</p>
+      <a href="https://github.com/GojiBran" target="_blank">💻 github.com/GojiBran</a>
+    </div>
+  </div>
+
+  <!-- GRAX Window -->
+  <div class="window hidden" id="graxWindow" data-title="Grax Game" data-default-top="320" data-default-z="101">
+    <div class="title-bar">
+      <div class="title-bar-text">Grax Game</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize"></button>
+        <button aria-label="Maximize"></button>
+        <button aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <p>Play the Grax platformer:</p>
+      <a href="https://baskinbros.itch.io/grax" target="_blank">🎮 baskinbros.itch.io/grax</a>
+    </div>
+  </div>
+
+  <!-- Taskbar -->
   <div class="taskbar">
-    <button onclick="toggleStartMenu()">Start</button>
+    <div class="taskbar-left">
+      <button onclick="toggleStartMenu()">
+        <img src="/favicon.ico" style="height: 14px; vertical-align: middle; margin-right: 4px;">
+        BaskinBros
+      </button>
+      <div class="taskbar-apps" id="taskbarApps"></div>
+    </div>
     <div class="taskbar-right">
       <span id="loadTime">0.00</span>
       <span id="footerClock">--:--</span>
     </div>
   </div>
 
+  <!-- Start Menu -->
   <div id="startMenu">
-    <div style="display: flex; background: silver; border: 2px outset white;">
-      <div style="width: 28px; background: navy; color: white; writing-mode: vertical-rl; text-align: center; font-weight: bold; padding: 4px 2px; font-size: 0.75rem; user-select: none;">Programs</div>
+    <div style="display: flex;">
+      <div class="start-sidebar">Programs</div>
       <div style="min-width: 160px; padding: 6px;">
         <ul style="list-style: none; padding: 0; margin: 0;">
-          <li><a href="https://www.youtube.com/@BaskinBros" target="_blank">🎥 YouTube</a></li>
-          <li><a href="https://soundcloud.com/gojibran" target="_blank">🎵 SoundCloud</a></li>
-          <li><a href="https://github.com/GojiBran" target="_blank">💻 GitHub</a></li>
-          <li><a href="https://baskinbros.itch.io/grax" target="_blank">🎮 Grax</a></li>
+          <li>
+            <a href="#" onclick="openWindow('gojiWindow')">
+              <img src="/favicon.ico" style="height: 14px; vertical-align: middle; margin-right: 4px;">
+              Goji
+            </a>
+          </li>
+          <li><a href="#" onclick="openWindow('ytWindow')">📺 YouTube</a></li>
+          <li><a href="#" onclick="openWindow('scWindow')">🎵 SoundCloud</a></li>
+          <li><a href="#" onclick="openWindow('gitWindow')">💾 GitHub</a></li>
+          <li><a href="#" onclick="openWindow('graxWindow')">🕹️ Grax Game</a></li>
         </ul>
       </div>
     </div>
   </div>
 
-  <script>
-    window.addEventListener("DOMContentLoaded", () => {
-      const t = (performance.now() / 1000).toFixed(2);
-      const tEl = document.getElementById("loadTime");
-      if (tEl) tEl.textContent = t;
+<script>
+  const windows = ["gojiWindow", "ytWindow", "scWindow", "gitWindow", "graxWindow"];
+  const taskbarApps = document.getElementById("taskbarApps");
+  let highestZ = 200; // ⬅️ Track the highest z-index in use
 
-      function updateFooterClock() {
-        const now = new Date();
-        const clock = document.getElementById("footerClock");
-        if (clock) {
-          clock.textContent = now.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-        }
+  function initWindow(id) {
+    const win = document.getElementById(id);
+    const titleBar = win.querySelector(".title-bar");
+    const closeBtn = titleBar.querySelector("button[aria-label='Close']");
+    const minimizeBtn = titleBar.querySelector("button[aria-label='Minimize']");
+    const title = win.dataset.title || id;
+
+    makeDraggable(titleBar, win);
+
+    const taskBtn = document.createElement("button");
+    taskBtn.innerHTML = `<img src="/favicon.ico" style="height: 14px; vertical-align: middle; margin-right: 4px;"> ${title}`;
+    taskBtn.className = "taskbar-app-button active";
+    taskBtn.id = "task-" + id;
+    taskBtn.onclick = () => {
+      if (win.classList.contains("hidden")) {
+        win.classList.remove("hidden");
+        taskBtn.classList.add("active");
+        centerWindow(win);
+        win.style.zIndex = ++highestZ; // ⬅️ Bring to front
+      } else {
+        win.classList.add("hidden");
+        taskBtn.classList.remove("active");
       }
-      setInterval(updateFooterClock, 1000);
-      updateFooterClock();
+    };
+    taskbarApps.appendChild(taskBtn);
+
+    closeBtn.onclick = () => {
+      win.classList.add("hidden");
+      taskBtn.remove();
+    };
+
+    minimizeBtn.onclick = () => {
+      win.classList.add("hidden");
+      taskBtn.classList.remove("active");
+    };
+
+    // Bring to front on title click
+    titleBar.addEventListener("mousedown", () => {
+      win.style.zIndex = ++highestZ;
     });
+  }
 
-    function toggleStartMenu() {
-      const menu = document.getElementById("startMenu");
-      if (menu) menu.style.display = (menu.style.display === "block") ? "none" : "block";
-    }
+  function openWindow(id) {
+    const win = document.getElementById(id);
+    const taskBtn = document.getElementById("task-" + id);
+    win.classList.remove("hidden");
+    centerWindow(win);
+    win.style.zIndex = ++highestZ; // ⬅️ Bring to front when opened
+    if (!taskBtn) initWindow(id);
+    else taskBtn.classList.add("active");
+    toggleStartMenu(false);
+  }
 
-    const win = document.getElementById("mainWindow");
-    const bar = document.getElementById("titleBar");
+  function centerWindow(win) {
+    const top = win.dataset.defaultTop || 100;
+    win.style.top = top + "px";
+    win.style.left = "50%";
+    win.style.transform = "translateX(-50%)";
+    win.style.zIndex = ++highestZ; // ⬅️ Also center brings forward
+  }
+
+  function makeDraggable(titleBar, win) {
     let isDragging = false, offsetX = 0, offsetY = 0;
 
-    bar.addEventListener("mousedown", (e) => {
+    titleBar.addEventListener("mousedown", (e) => {
       isDragging = true;
-      offsetX = e.clientX - win.offsetLeft;
-      offsetY = e.clientY - win.offsetTop;
+      win.style.transform = "none";
+
+      const rect = win.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+
+      win.style.zIndex = ++highestZ; // ⬅️ Bring to front on drag
     });
 
     document.addEventListener("mousemove", (e) => {
       if (isDragging) {
-        win.style.left = e.clientX - offsetX + "px";
-        win.style.top = e.clientY - offsetY + "px";
+        win.style.left = `${e.clientX - offsetX}px`;
+        win.style.top = `${e.clientY - offsetY}px`;
       }
     });
 
-    document.addEventListener("mouseup", () => isDragging = false);
+    document.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
+  }
 
-    document.addEventListener("click", (e) => {
-      const startBtn = document.querySelector("button[onclick='toggleStartMenu()']");
-      const startMenu = document.getElementById("startMenu");
-      if (startMenu && startMenu.style.display === "block") {
-        if (!startMenu.contains(e.target) && e.target !== startBtn) {
-          startMenu.style.display = "none";
-        }
+  function toggleStartMenu(forceClose = null) {
+    const menu = document.getElementById("startMenu");
+    if (forceClose === false) menu.style.display = "none";
+    else menu.style.display = (menu.style.display === "block") ? "none" : "block";
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("loadTime").textContent = (performance.now() / 1000).toFixed(2);
+    setInterval(() => {
+      document.getElementById("footerClock").textContent =
+        new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }, 1000);
+
+    // Initialize all visible windows (like Goji) to avoid duplicate taskbar buttons
+    windows.forEach(id => {
+      const win = document.getElementById(id);
+      if (!win.classList.contains("hidden")) {
+        centerWindow(win);
+        initWindow(id);
       }
     });
-  </script>
+  });
+
+  document.addEventListener("click", (e) => {
+    const menu = document.getElementById("startMenu");
+    if (menu.style.display === "block" && !menu.contains(e.target) && !e.target.closest("button[onclick^='toggleStartMenu']")) {
+      menu.style.display = "none";
+    }
+  });
+</script>
 </body>
 </html>
