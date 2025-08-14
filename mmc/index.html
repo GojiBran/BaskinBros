@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Movie Marathon Shuffle — Universes • Anthologies • Vibes</title>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0c0f; --panel:#131420; --panel2:#1a1b2a;
+    --fg:#eaf2ff; --muted:#8e93ad; --accent:#99cc33; --hot:#ff4ecd;
+    --bd:#24253a; --shadow:0 14px 40px rgba(0,0,0,.35); --r:16px;
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:radial-gradient(1000px 600px at -10% -10%, rgba(153,204,51,.15), transparent 55%),radial-gradient(800px 500px at 110% 0%, rgba(255,78,205,.08), transparent 60%),var(--bg); color:var(--fg); font-family:"Chakra Petch", system-ui, sans-serif; line-height:1.35}
+  header{position:sticky; top:0; z-index:10; backdrop-filter:blur(7px); background:linear-gradient(180deg, rgba(11,12,15,.9), rgba(11,12,15,.55)); border-bottom:1px solid #1b1c2a}
+  .wrap{max-width:1180px; margin:0 auto; padding:16px}
+  h1{margin:0; font-size:clamp(22px,3vw,36px); letter-spacing:.4px; background:linear-gradient(90deg, var(--accent), var(--hot)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .bar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .actions{display:flex; gap:8px; flex-wrap:wrap}
+  button{border:1px solid var(--bd); background:linear-gradient(180deg,#1a1b2a,#121323); color:var(--fg); padding:10px 14px; border-radius:999px; font-weight:700; cursor:pointer; box-shadow:var(--shadow)}
+  button:hover{transform:translateY(-1px); border-color:#323459}
+  .accent{border-color:transparent; background:linear-gradient(180deg, #2c3516, #1a220f); color:#eeffe1}
+  .ghost{background:transparent}
+  main{padding:18px}
+  .grid{display:grid; grid-template-columns:repeat(12,1fr); gap:16px; max-width:1180px; margin:0 auto}
+  .card{grid-column:span 12; background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--bd); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden}
+  .hd{padding:14px 16px; border-bottom:1px solid var(--bd); display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .bd{padding:14px 16px}
+  .mini{color:var(--muted); font-size:.98rem}
+  .row{display:grid; gap:12px}
+  @media (min-width:900px){ .row.cols-2{grid-template-columns:1fr 1fr} .row.cols-3{grid-template-columns:repeat(3,1fr)} }
+  fieldset{border:1px solid var(--bd); border-radius:12px; padding:10px}
+  legend{padding:0 8px; color:#cfe6c0}
+  label{display:flex; align-items:center; gap:8px; margin:6px 0}
+  input[type="text"], input[type="number"], select, textarea{
+    width:100%; padding:10px 12px; border:1px solid #2a2b40; background:#0f101a; color:var(--fg); border-radius:10px; font-family:inherit
+  }
+  small{color:var(--muted)}
+  .pill{display:inline-block; padding:4px 8px; border-radius:999px; background:#0f2622; border:1px solid #1a3b35; color:#d7fff5; font-size:12px; margin:2px 4px 2px 0}
+  .list{display:grid; gap:8px}
+  .movie{padding:10px 12px; border:1px solid #24263b; border-radius:12px; background:#111223}
+  .movie b{color:#eaffd9}
+  .split{display:grid; gap:12px}
+  @media (min-width:900px){ .split{grid-template-columns:1.2fr .8fr} }
+  ol{margin:0; padding-left:22px}
+  .hint{color:var(--muted)}
+  @media print{
+    header, .no-print{display:none !important}
+    body{background:#fff; color:#000}
+    .card{border-color:#000}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap bar">
+    <h1>🎬 Movie Marathon Shuffle — Universes • Anthologies • Vibes</h1>
+    <div class="actions no-print">
+      <button class="accent" id="btnShuffle">🎲 Shuffle</button>
+      <button id="btnCopy">📋 Copy Playlist</button>
+      <button class="ghost" onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <!-- Controls -->
+    <section class="card">
+      <div class="hd">
+        <h2>Build Your Marathon</h2>
+        <div class="actions no-print">
+          <button id="btnResetFilters">Reset Filters</button>
+          <button id="btnExport">Export JSON</button>
+          <button id="btnImport">Import JSON</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="row cols-3">
+          <fieldset>
+            <legend>Filters</legend>
+            <label>Genres (multi-select)
+              <select id="genreSelect" multiple size="6"></select>
+            </label>
+            <label>Vibes (multi-select)
+              <select id="vibeSelect" multiple size="6"></select>
+            </label>
+            <div class="row cols-2">
+              <label>Year From <input id="yearFrom" type="number" min="1900" max="2100" value="1960"></label>
+              <label>Year To <input id="yearTo" type="number" min="1900" max="2100" value="2025"></label>
+            </div>
+            <label>Director (contains)<input id="directorFilter" type="text" placeholder="e.g., Gilliam, Wachowski"></label>
+            <label>Universe / Franchise (contains)<input id="universeFilter" type="text" placeholder="e.g., MCU, Besson-verse"></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Grouping & Limits</legend>
+            <label>Group By
+              <select id="groupBy">
+                <option value="none">None (pure shuffle)</option>
+                <option value="universe">Universe / Franchise</option>
+                <option value="director">Director</option>
+                <option value="vibe">Vibe</option>
+                <option value="decade">Decade</option>
+              </select>
+            </label>
+            <label>Order of Groups
+              <select id="groupOrder">
+                <option value="shuffle">Shuffle groups</option>
+                <option value="alpha">Alphabetical</option>
+                <option value="size">Largest groups first</option>
+              </select>
+            </label>
+            <div class="row cols-2">
+              <label>Max per Franchise <input id="maxPerUni" type="number" min="0" value="0"></label>
+              <label>Total Playlist Length <input id="maxTotal" type="number" min="0" value="0"></label>
+            </div>
+            <label>Seed (optional for reproducible shuffle)<input id="seed" type="text" placeholder="any text"></label>
+            <small>Tip: leave "0" to mean "no limit".</small>
+          </fieldset>
+
+          <fieldset>
+            <legend>Add Your Own Movie</legend>
+            <label>Title <input id="addTitle" type="text" placeholder="Movie Title"></label>
+            <div class="row cols-2">
+              <label>Year <input id="addYear" type="number" min="1900" max="2100" value="1999"></label>
+              <label>Runtime (min) <input id="addRuntime" type="number" min="1" value="120"></label>
+            </div>
+            <label>Director <input id="addDirector" type="text" placeholder="e.g., Luc Besson"></label>
+            <label>Universe / Franchise <input id="addUniverse" type="text" placeholder="e.g., Besson-verse, MCU"></label>
+            <label>Genres (comma) <input id="addGenres" type="text" placeholder="e.g., Sci-Fi, Action"></label>
+            <label>Vibes (comma) <input id="addVibes" type="text" placeholder="e.g., Neon Noir, Campy Space Opera"></label>
+            <div class="actions no-print">
+              <button id="btnAddMovie">Add</button>
+              <button id="btnBulk">Bulk Paste</button>
+            </div>
+            <small>Bulk format: <code>Title (Year) | director: X | universe: Y | genres: a,b | vibes: c,d</code></small>
+          </fieldset>
+        </div>
+      </div>
+    </section>
+
+    <!-- Library preview -->
+    <section class="card split">
+      <div class="bd">
+        <div class="hd" style="border:none; padding:0 0 10px 0">
+          <h2>Library (after filters)</h2>
+        </div>
+        <div id="libCount" class="mini"></div>
+        <div id="library" class="list"></div>
+      </div>
+      <div class="bd">
+        <div class="hd" style="border:none; padding:0 0 10px 0">
+          <h2>Marathon Playlist</h2>
+        </div>
+        <ol id="playlist"></ol>
+        <p class="hint">Shuffle again, or copy/print above. Seed lets you recreate the same order.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+/* ====== Data Model ======
+movie: { id, title, year, runtime, director, universe, genres[], vibes[] }
+Saved to localStorage under MOVIE_MARATHON_LIB
+*/
+
+const DEFAULTS = [
+  // Fifth Element energy set & friends
+  M("The Fifth Element", 1997, 126, "Luc Besson", "Besson-verse", ["Sci-Fi","Action"], ["Campy Space Opera","Color Blast"]),
+  M("Valerian and the City of a Thousand Planets", 2017, 137, "Luc Besson", "Besson-verse", ["Sci-Fi","Adventure"], ["Color Blast","Space Opera"]),
+  M("Speed Racer", 2008, 135, "Lana & Lilly Wachowski", "Wachowski-verse", ["Action","Family"], ["Neon Overload","Hyperstylized"]),
+  M("Jupiter Ascending", 2015, 127, "Lana & Lilly Wachowski", "Wachowski-verse", ["Sci-Fi","Fantasy"], ["Space Opera","Melodrama"]),
+  M("Brazil", 1985, 132, "Terry Gilliam", "Gilliam-ish", ["Sci-Fi","Satire"], ["Surreal","Bureaucratic Nightmare"]),
+  M("Guardians of the Galaxy", 2014, 121, "James Gunn", "MCU", ["Sci-Fi","Action"], ["Color Blast","Comedy"]),
+  M("Thor: Ragnarok", 2017, 130, "Taika Waititi", "MCU", ["Sci-Fi","Action"], ["Color Blast","Comedy"]),
+  M("Flash Gordon", 1980, 111, "Mike Hodges", "Flash Gordon", ["Sci-Fi","Adventure"], ["Campy Space Opera","Color Blast"]),
+  M("Starcrash", 1978, 94, "Luigi Cozzi", "Starcrash", ["Sci-Fi","Adventure"], ["Campy Space Opera"]),
+  M("Repo Man", 1984, 92, "Alex Cox", "Cult", ["Sci-Fi","Comedy"], ["Punk","Weirdcore"]),
+  M("Big Trouble in Little China", 1986, 99, "John Carpenter", "Cult", ["Fantasy","Action"], ["Camp","Comedy"]),
+  M("Blade Runner", 1982, 117, "Ridley Scott", "Blade Runner", ["Sci-Fi","Noir"], ["Neon Noir","Slow Burn"]),
+  M("Akira", 1988, 124, "Katsuhiro Otomo", "Akira", ["Sci-Fi","Animation"], ["Cyberpunk","Neon Noir"]),
+  M("Streets of Fire", 1984, 93, "Walter Hill", "Cult", ["Action","Musical"], ["Neon Noir","Rock Opera"]),
+  M("Hackers", 1995, 107, "Iain Softley", "Cult", ["Crime","Drama"], ["Cyberpunk","Ravecore"]),
+  M("Tank Girl", 1995, 104, "Rachel Talalay", "Tank Girl", ["Action","Comedy"], ["Punk","Apocalypse Chic"]),
+  M("Johnny Mnemonic", 1995, 103, "Robert Longo", "Cyber Keanu", ["Sci-Fi","Action"], ["Cyberpunk"]),
+  M("Dune", 1984, 137, "David Lynch", "Dune (Lynch)", ["Sci-Fi"], ["Weirdcore","Space Opera"]),
+  M("Space Truckers", 1996, 95, "Stuart Gordon", "Cult", ["Sci-Fi","Comedy"], ["Goofy","Blue-Collar Space"]),
+  M("Delicatessen", 1991, 99, "Caro & Jeunet", "Jeunet-verse", ["Comedy","Fantasy"], ["Surreal","Whimsy"]),
+  M("The City of Lost Children", 1995, 112, "Caro & Jeunet", "Jeunet-verse", ["Fantasy","Sci-Fi"], ["Surreal","Dark Fairytale"]),
+  M("Holy Motors", 2012, 115, "Leos Carax", "Carax", ["Drama","Fantasy"], ["Absurd","Art House"]),
+  M("Paprika", 2006, 90, "Satoshi Kon", "Kon-verse", ["Animation","Sci-Fi"], ["Dream Logic","Surreal"]),
+  M("Zardoz", 1974, 105, "John Boorman", "Cult", ["Sci-Fi","Fantasy"], ["WTF","Weirdcore"]),
+];
+
+function M(title, year, runtime, director, universe, genres, vibes){
+  return { id: crypto.randomUUID(), title, year, runtime, director, universe, genres, vibes };
+}
+
+const KEY = "MOVIE_MARATHON_LIB";
+let library = loadLibrary();
+
+// ====== UI refs
+const genreSelect = document.getElementById('genreSelect');
+const vibeSelect = document.getElementById('vibeSelect');
+const yearFrom = document.getElementById('yearFrom');
+const yearTo = document.getElementById('yearTo');
+const dirFilter = document.getElementById('directorFilter');
+const uniFilter = document.getElementById('universeFilter');
+const groupBy = document.getElementById('groupBy');
+const groupOrder = document.getElementById('groupOrder');
+const maxPerUni = document.getElementById('maxPerUni');
+const maxTotal = document.getElementById('maxTotal');
+const seedInput = document.getElementById('seed');
+const libEl = document.getElementById('library');
+const libCount = document.getElementById('libCount');
+const playlistEl = document.getElementById('playlist');
+
+// Buttons
+document.getElementById('btnShuffle').addEventListener('click', doShuffle);
+document.getElementById('btnCopy').addEventListener('click', copyPlaylist);
+document.getElementById('btnResetFilters').addEventListener('click', resetFilters);
+document.getElementById('btnExport').addEventListener('click', exportJSON);
+document.getElementById('btnImport').addEventListener('click', importJSONFlow);
+document.getElementById('btnAddMovie').addEventListener('click', addMovieFromForm);
+document.getElementById('btnBulk').addEventListener('click', bulkPaste);
+
+// Initialize selects
+refreshFacetOptions();
+renderLibrary();
+
+// ====== Functions ======
+function loadLibrary(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ return JSON.parse(raw); }
+  }catch(e){}
+  // seed defaults and store
+  localStorage.setItem(KEY, JSON.stringify(DEFAULTS));
+  return JSON.parse(localStorage.getItem(KEY));
+}
+function saveLibrary(){ localStorage.setItem(KEY, JSON.stringify(library)); }
+
+function unique(sortedArray){
+  return [...new Set(sortedArray)].sort((a,b)=>a.localeCompare(b, undefined, {sensitivity:'base'}));
+}
+function refreshFacetOptions(){
+  const allGenres = unique(library.flatMap(m => m.genres || []));
+  const allVibes  = unique(library.flatMap(m => m.vibes  || []));
+  genreSelect.innerHTML = allGenres.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("");
+  vibeSelect.innerHTML  = allVibes.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function getSelected(select){
+  return [...select.options].filter(o=>o.selected).map(o=>o.value);
+}
+
+function applyFilters(){
+  const genres = getSelected(genreSelect);
+  const vibes = getSelected(vibeSelect);
+  const yFrom = parseInt(yearFrom.value)||1900;
+  const yTo = parseInt(yearTo.value)||2100;
+  const df = dirFilter.value.trim().toLowerCase();
+  const uf = uniFilter.value.trim().toLowerCase();
+
+  let out = library.filter(m=>{
+    if(m.year < yFrom || m.year > yTo) return false;
+    if(df && !String(m.director||"").toLowerCase().includes(df)) return false;
+    if(uf && !String(m.universe||"").toLowerCase().includes(uf)) return false;
+    if(genres.length && !genres.every(g=> (m.genres||[]).includes(g))) return false;
+    if(vibes.length && !vibes.every(v=> (m.vibes ||[]).includes(v))) return false;
+    return true;
+  });
+
+  // enforce max per franchise if set (soft clip during preview only)
+  const maxUni = parseInt(maxPerUni.value)||0;
+  if(maxUni>0){
+    const map = new Map();
+    out = out.filter(m=>{
+      const key = (m.universe||"_none");
+      const count = map.get(key)||0;
+      if(count >= maxUni) return false;
+      map.set(key, count+1);
+      return true;
+    });
+  }
+  return out;
+}
+
+function renderLibrary(){
+  const filtered = applyFilters();
+  libCount.textContent = `${filtered.length} title(s) in view`;
+  libEl.innerHTML = filtered.map(m => `
+    <div class="movie">
+      <b>${esc(m.title)}</b> <span class="mini">(${m.year}) • ${esc(m.director||"Unknown")}</span><br/>
+      ${m.universe? `<span class="pill">Universe: ${esc(m.universe)}</span>`:``}
+      ${(m.genres||[]).map(g=>`<span class="pill">${esc(g)}</span>`).join("")}
+      ${(m.vibes ||[]).map(v=>`<span class="pill">${esc(v)}</span>`).join("")}
+    </div>
+  `).join("");
+}
+
+function resetFilters(){
+  genreSelect.selectedIndex = -1;
+  vibeSelect.selectedIndex = -1;
+  yearFrom.value = 1960; yearTo.value = 2025;
+  dirFilter.value = ""; uniFilter.value="";
+  groupBy.value = "none"; groupOrder.value="shuffle";
+  maxPerUni.value = 0; maxTotal.value=0; seedInput.value="";
+  renderLibrary();
+  playlistEl.innerHTML = "";
+}
+
+// PRNG from seed (Mulberry32)
+function rngFromSeed(seed){
+  let h=1779033703 ^ seed.length;
+  for(let i=0;i<seed.length;i++){
+    h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
+    h = (h<<13) | (h>>>19);
+  }
+  return function(){
+    h = Math.imul(h ^ (h>>>16), 2246822507);
+    h = Math.imul(h ^ (h>>>13), 3266489909);
+    const t = (h ^= h>>>16) >>> 0;
+    return (t / 4294967296);
+  }
+}
+function shuffle(arr, seed=""){
+  const a = arr.slice();
+  let rnd = Math.random;
+  if(seed && seed.trim()) rnd = rngFromSeed(seed.trim());
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(rnd()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function groupKey(m, mode){
+  if(mode==="universe") return m.universe || "—";
+  if(mode==="director") return m.director || "—";
+  if(mode==="vibe") return (m.vibes && m.vibes[0]) || "—";
+  if(mode==="decade") return Math.floor(m.year/10)*10 + "s";
+  return "_";
+}
+
+function doShuffle(){
+  const list = applyFilters();
+  const seed = seedInput.value;
+  const mode = groupBy.value;
+  const order = groupOrder.value;
+  const maxUni = parseInt(maxPerUni.value)||0;
+  let totalMax = parseInt(maxTotal.value)||0;
+
+  // optional: re-enforce max per universe for the final playlist
+  let filtered = list;
+  if(maxUni>0){
+    const map = new Map();
+    filtered = list.filter(m=>{
+      const key = (m.universe||"_none");
+      const count = map.get(key)||0;
+      if(count >= maxUni) return false;
+      map.set(key, count+1);
+      return true;
+    });
+  }
+
+  let out = [];
+  if(mode==="none"){
+    out = shuffle(filtered, seed);
+  }else{
+    // bucket by group
+    const buckets = {};
+    for(const m of filtered){
+      const k = groupKey(m, mode);
+      (buckets[k] ||= []).push(m);
+    }
+    // shuffle inside each bucket
+    for(const k in buckets){ buckets[k] = shuffle(buckets[k], seed + "::" + k); }
+    // determine group order
+    let keys = Object.keys(buckets);
+    if(order==="alpha"){ keys.sort((a,b)=>a.localeCompare(b, undefined, {numeric:true})); }
+    else if(order==="size"){ keys.sort((a,b)=>buckets[b].length - buckets[a].length); }
+    else { keys = shuffle(keys, seed+"::groups"); }
+
+    // interleave buckets (round-robin) to avoid long franchise clumps
+    let idx=0, added=0;
+    while(true){
+      let progressed=false;
+      for(const k of keys){
+        const arr = buckets[k];
+        if(idx < arr.length){
+          out.push(arr[idx]);
+          progressed=true; added++;
+          if(totalMax>0 && added>=totalMax){ progressed=false; break; }
+        }
+      }
+      if(totalMax>0 && added>=totalMax) break;
+      if(!progressed) break;
+      idx++;
+    }
+  }
+
+  // hard total cap if still over
+  if(totalMax>0 && out.length>totalMax) out = out.slice(0,totalMax);
+
+  renderPlaylist(out);
+}
+
+function renderPlaylist(list){
+  playlistEl.innerHTML = list.map(m => {
+    const extra = [];
+    if(m.universe) extra.push(`Universe: ${esc(m.universe)}`);
+    if(m.vibes?.length) extra.push(`Vibe: ${esc(m.vibes[0])}`);
+    return `<li><b>${esc(m.title)}</b> (${m.year}) — <span class="mini">${esc(m.director||"Unknown")}</span><br><small class="mini">${extra.join(" • ")}</small></li>`;
+  }).join("");
+}
+
+function copyPlaylist(){
+  const items = [...playlistEl.querySelectorAll('li')].map(li=>li.textContent.trim());
+  if(!items.length){ alert("No playlist to copy yet. Hit Shuffle!"); return; }
+  const txt = "Movie Marathon Playlist\n\n" + items.map((t,i)=>`${i+1}. ${t}`).join("\n");
+  navigator.clipboard.writeText(txt).then(()=> alert("Playlist copied to clipboard!"));
+}
+
+// ===== Add Movies =====
+function addMovieFromForm(){
+  const t = document.getElementById('addTitle').value.trim();
+  if(!t){ alert("Title required"); return; }
+  const y = parseInt(document.getElementById('addYear').value)||2000;
+  const r = parseInt(document.getElementById('addRuntime').value)||120;
+  const d = document.getElementById('addDirector').value.trim();
+  const u = document.getElementById('addUniverse').value.trim();
+  const g = splitCSV(document.getElementById('addGenres').value);
+  const v = splitCSV(document.getElementById('addVibes').value);
+  library.push(M(t,y,r,d,u,g,v));
+  saveLibrary(); refreshFacetOptions(); renderLibrary();
+  // clear title only
+  document.getElementById('addTitle').value = "";
+}
+
+function bulkPaste(){
+  const input = prompt(
+`Paste one per line:
+Title (Year) | director: X | universe: Y | genres: a,b | vibes: c,d
+
+Example:
+Cherry 2000 (1987) | director: Steve De Jarnatt | universe: Cult | genres: Sci-Fi, Romance | vibes: Retro-Future, Desert Punk`
+  );
+  if(!input) return;
+  const lines = input.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  let added=0;
+  for(const line of lines){
+    try{
+      // parse Title (Year)
+      const m = line.match(/^(.*?)\s*\((\d{4})\)\s*\|\s*(.*)$/);
+      if(!m) continue;
+      const title = m[1].trim();
+      const year  = parseInt(m[2]);
+      const rest  = m[3];
+
+      const kv = {};
+      rest.split("|").map(s=>s.trim()).forEach(pair=>{
+        const idx = pair.indexOf(":");
+        if(idx>0){
+          const k = pair.slice(0,idx).trim().toLowerCase();
+          const v = pair.slice(idx+1).trim();
+          kv[k] = v;
+        }
+      });
+      const director = kv["director"]||"";
+      const universe = kv["universe"]||"";
+      const genres = splitCSV(kv["genres"]||"");
+      const vibes  = splitCSV(kv["vibes"]||"");
+      library.push(M(title, year, 120, director, universe, genres, vibes));
+      added++;
+    }catch(e){}
+  }
+  if(added){ saveLibrary(); refreshFacetOptions(); renderLibrary(); }
+  alert(`Added ${added} movie(s).`);
+}
+
+function splitCSV(s){ return s? s.split(",").map(x=>x.trim()).filter(Boolean):[]; }
+
+// ===== Export / Import =====
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(library,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download="movie_library.json"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
+function importJSONFlow(){
+  const input = document.createElement('input'); input.type="file"; input.accept=".json,application/json";
+  input.onchange = (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const arr = JSON.parse(reader.result);
+        if(!Array.isArray(arr)) throw new Error("Invalid JSON");
+        // naive sanity check
+        for(const m of arr){
+          if(!m.id) m.id = crypto.randomUUID();
+          if(!m.title || !m.year) throw new Error("Missing title/year");
+          m.genres ||= []; m.vibes ||= [];
+        }
+        library = arr;
+        saveLibrary(); refreshFacetOptions(); renderLibrary();
+        alert("Library imported.");
+      }catch(err){
+        alert("Import failed: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// Re-render library when filters change
+[genreSelect, vibeSelect, yearFrom, yearTo, dirFilter, uniFilter, maxPerUni].forEach(el=>{
+  el.addEventListener('input', renderLibrary);
+});
+
+</script>
+</body>
+</html>
