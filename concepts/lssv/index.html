@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Top‑Down Solar System — True‑Scale Orrery (Goji)</title>
+  <style>
+    :root{ --bg:#06080c; --ink:#eaf2ff; --muted:#233047; --chip:#0e1420; --acc:#99cc33; --accent2:#7ad1ff; --hot:#ff6b6b; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:radial-gradient(1200px 900px at 60% -10%, #11192a 0%, #06080c 60%, #04060a 100%);color:var(--ink);font:14px/1.4 ui-sans-serif,system-ui,Segoe UI,Inter,Roboto,Arial}
+    #wrap{position:fixed;inset:0}
+    canvas{position:absolute;inset:0;display:block;cursor:grab}
+    canvas:active{cursor:grabbing}
+
+    .ui{position:absolute;top:10px;left:10px;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;z-index:3;max-width:min(980px,92vw)}
+    .btn{border:1px solid var(--muted);background:#0c121d;color:#dfe8ff;border-radius:10px;padding:.35rem .6rem;cursor:pointer;white-space:nowrap}
+    .btn:hover{border-color:#3a4a68;background:#121b2b}
+    .btn:active{transform:translateY(1px)}
+    .chip{background:var(--chip);border:1px solid var(--muted);border-radius:999px;padding:.25rem .55rem;font:12px ui-monospace,Menlo,Consolas;color:#cfe4ff;display:inline-flex;align-items:center;gap:.4rem}
+    .chip input,.chip select{background:#0b111c;color:#dfe8ff;border:1px solid #2a3a58;border-radius:8px;padding:.15rem .35rem}
+    .chip select{max-width:260px}
+    .chip .val{color:#eaf2ff}
+
+    .legend{position:absolute;right:10px;bottom:10px;background:#0f1524;border:1px solid var(--muted);border-radius:10px;padding:.45rem .6rem;font:12px ui-monospace,Menlo,Consolas;color:#cfe4ff;z-index:2;max-width:min(44vw,520px)}
+    #info{position:absolute;left:10px;bottom:10px;background:#0f1524;border:1px solid var(--muted);border-radius:12px;padding:.6rem .75rem;font:12px ui-monospace,Menlo,Consolas;color:#cfe4ff;z-index:2;max-width:min(44vw,520px)}
+    #info .title{display:flex;align-items:center;gap:.5rem;font-weight:700;color:#fff}
+    #info .pill{padding:.15rem .45rem;border:1px solid var(--muted);border-radius:999px;background:#0f141f}
+    #info .row{display:grid;grid-template-columns:auto 1fr;gap:.2rem .7rem;margin:.15rem 0}
+
+    .tooltip{position:absolute;pointer-events:none;background:#0f1524;border:1px solid var(--muted);color:#eaf2ff;border-radius:8px;padding:.25rem .45rem;font:12px ui-monospace,Menlo,Consolas;transform:translate(10px,10px);z-index:4}
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="cv"></canvas>
+
+    <div class="ui">
+      <span class="chip">Goji Orrery • top‑down • true scale</span>
+      <label class="chip">target
+        <select id="target"></select>
+      </label>
+      <label class="chip"><input id="track" type="checkbox" checked> track</label>
+      <button id="fitTarget" class="btn">Fit target</button>
+      <button id="fitInner" class="btn">Inner ≤ 2 AU</button>
+      <button id="fitAll" class="btn">All (→ farthest)</button>
+      <label class="chip">zoom
+        <input id="zoom" type="range" min="0" max="1" step="0.0001" value="0">
+        <span class="val" id="zoomVal">1×</span>
+      </label>
+      <label class="chip">time <input id="realtime" type="checkbox" checked> realtime</label>
+      <label class="chip">speed <input id="speed" type="range" min="-6" max="6" value="0" step="0.25"></label>
+      <label class="chip">labels <input id="labels" type="checkbox" checked></label>
+      <label class="chip"><input id="beauty" type="checkbox" checked> glow</label>
+      <label class="chip"><input id="texOn" type="checkbox" checked> textures</label>
+      <label class="chip"><input id="orbitsOn" type="checkbox" checked> orbits</label>
+    </div>
+
+    <div id="info" style="display:none"></div>
+    <div id="legend" class="legend"></div>
+    <div id="tip" class="tooltip" style="display:none"></div>
+  </div>
+
+<script>
+(()=>{
+  // ---------- Math & Time ----------
+  const DEG=Math.PI/180, DAY=86400000, AU_KM=149597870.7, LT_S_PER_AU=499.004784;
+  const j2000 = new Date(Date.UTC(2000,0,1,12,0,0));
+  const daysSinceJ2000 = d => (d - j2000)/DAY;
+  function solveE(M,e){ let E = M + (e*Math.sin(M))/(1 - Math.sin(M+e)+Math.sin(M)); for(let i=0;i<8;i++){ const f=E-e*Math.sin(E)-M, fp=1-e*Math.cos(E); E -= f/fp;} return E; }
+  function orbitalToXY(aAU,e,iDeg,OmegaDeg,omegaDeg,L0Deg,nDegPerDay,days){
+    const L=(L0Deg + nDegPerDay*days)*DEG, wBar=(OmegaDeg+omegaDeg)*DEG, M=(L-wBar)%(2*Math.PI);
+    const E=solveE(M,e); const v=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2));
+    const r=aAU*(1 - e*Math.cos(E));
+    const xOrb=r*Math.cos(v), yOrb=r*Math.sin(v);
+    const cosO=Math.cos(OmegaDeg*DEG), sinO=Math.sin(OmegaDeg*DEG);
+    const cosi=Math.cos(iDeg*DEG), sini=Math.sin(iDeg*DEG);
+    const cosw=Math.cos(omegaDeg*DEG), sinw=Math.sin(omegaDeg*DEG);
+    const x1=cosw*xOrb - sinw*yOrb, y1=sinw*xOrb + cosw*yOrb;
+    const x2=x1, y2=cosi*y1 - sini*0; // top‑down ecliptic => ignore z
+    const x3=cosO*x2 - sinO*y2, y3=sinO*x2 + cosO*y2;
+    return {x:x3, y:y3};
+  }
+  function orbitalPoint(aAU,e,iDeg,OmegaDeg,omegaDeg,trueAnomaly){
+    const f=trueAnomaly; // in radians
+    const E = 2*Math.atan(Math.tan(f/2)*Math.sqrt((1-e)/(1+e)));
+    const r=aAU*(1 - e*Math.cos(E));
+    const xOrb=r*Math.cos(f), yOrb=r*Math.sin(f);
+    const cosO=Math.cos(OmegaDeg*DEG), sinO=Math.sin(OmegaDeg*DEG);
+    const cosi=Math.cos(iDeg*DEG), sini=Math.sin(iDeg*DEG);
+    const cosw=Math.cos(omegaDeg*DEG), sinw=Math.sin(omegaDeg*DEG);
+    const x1=cosw*xOrb - sinw*yOrb, y1=sinw*xOrb + cosw*yOrb;
+    const x2=x1, y2=cosi*y1 - sini*0;
+    const x3=cosO*x2 - sinO*y2, y3=sinO*x2 + cosO*y2;
+    return {x:x3, y:y3};
+  }
+  function moonXY(parentXY,tDays,opts){
+    const { a_km, period_days, e=0, incDeg=0, OmegaDeg=0, omegaDeg=0, phase0Deg=0 }=opts;
+    const aAU=a_km/AU_KM; const n=360/period_days; const M=((phase0Deg + n*tDays)*DEG)%(2*Math.PI);
+    const E=solveE(M,e); const v=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2));
+    const r=aAU*(1 - e*Math.cos(E)); const xOrb=r*Math.cos(v), yOrb=r*Math.sin(v);
+    const cosO=Math.cos(OmegaDeg*DEG), sinO=Math.sin(OmegaDeg*DEG); const cosi=Math.cos(incDeg*DEG), sini=Math.sin(incDeg*DEG); const cosw=Math.cos(omegaDeg*DEG), sinw=Math.sin(omegaDeg*DEG);
+    const x1=cosw*xOrb - sinw*yOrb, y1=sinw*xOrb + cosw*yOrb; const x2=x1, y2=cosi*y1 - sini*0; const x3=cosO*x2 - sinO*y2, y3=sinO*x2 + cosO*y2;
+    return {x:parentXY.x + x3, y:parentXY.y + y3};
+  }
+
+  // ---------- Elements (J2000 approx) ----------
+  const PLANETS=[
+    {k:'mercury', n:'Mercury', c:'#c9c2b8', R:2440, a:0.38709893, e:0.20563069, i:7.00487,  O:48.33167,  w:29.124,     L0:252.25084, ndeg:4.09233445},
+    {k:'venus',   n:'Venus',   c:'#d8c6a6', R:6052, a:0.72333199, e:0.00677323, i:3.39471,  O:76.68069,  w:54.852,     L0:181.97973, ndeg:1.60213034},
+    {k:'earth',   n:'Earth',   c:'#7ad1ff', R:6371, a:1.00000011, e:0.01671022, i:0.00005,  O:-11.26064, w:102.94719, L0:100.46435, ndeg:0.98560910},
+    {k:'mars',    n:'Mars',    c:'#ff6b6b', R:3390, a:1.52366231, e:0.09341233, i:1.85061,  O:49.57854,  w:336.04084, L0:355.45332, ndeg:0.524039},
+    {k:'jupiter', n:'Jupiter', c:'#f1e0c6', R:69911,a:5.20336301, e:0.04839266, i:1.30530,  O:100.55615, w:14.75385,  L0:34.40438,  ndeg:0.083056},
+    {k:'saturn',  n:'Saturn',  c:'#f7e7b5', R:58232,a:9.53707032, e:0.05415060, i:2.48446,  O:113.71504, w:92.43194,  L0:49.94432,  ndeg:0.033480},
+    {k:'uranus',  n:'Uranus',  c:'#9be7ff', R:25362,a:19.19126393,e:0.04716771, i:0.76986,  O:74.22988,  w:170.96424, L0:313.23218, ndeg:0.011694},
+    {k:'neptune', n:'Neptune', c:'#7bbcff', R:24622,a:30.06896348,e:0.00858587, i:1.76917,  O:131.72169, w:44.97135,  L0:304.88003, ndeg:0.005965},
+    {k:'pluto',   n:'Pluto',   c:'#cdb7ff', R:1188, a:39.482,     e:0.2488,    i:17.16,    O:110.299,   w:113.834,   L0:238.929,   ndeg:0.00396}
+  ];
+
+  const DWARFS=[
+    {k:'eris',    n:'Eris',    c:'#e8dbff', R:1163, a:67.7,  e:0.44,  i:44.0,  O:36.0,  w:151.0,  L0:120.0, ndeg:0.0053},
+    {k:'haumea',  n:'Haumea',  c:'#fff1d7', R:816,  a:43.1,  e:0.19,  i:28.2,  O:122.2, w:240.2, L0:80.0,  ndeg:0.0089},
+    {k:'makemake',n:'Makemake',c:'#e7f5ff', R:715,  a:45.8,  e:0.16,  i:29.0,  O:79.6,  w:295.0, L0:60.0,  ndeg:0.0083},
+    {k:'quaoar',  n:'Quaoar',  c:'#ffd7c0', R:555,  a:43.7,  e:0.04,  i:8.0,   O:189.0, w:155.0, L0:40.0,  ndeg:0.0088}
+  ];
+
+  const MOONS=[
+    {k:'moon',   n:'Moon',    c:'#dddddd', R:1737, parent:'earth',   a_km:384400,  period_days:27.321661, e:0.0549, incDeg:5.145, OmegaDeg:125.08, omegaDeg:318.15, phase0Deg:0},
+    {k:'phobos', n:'Phobos',  c:'#bbbbbb', R:11.27, parent:'mars',    a_km:9376,    period_days:0.31891},
+    {k:'deimos', n:'Deimos',  c:'#cccccc', R:6.2,   parent:'mars',    a_km:23463,   period_days:1.26244},
+    {k:'io',      n:'Io',      c:'#ffd18a', R:1821.6, parent:'jupiter', a_km:421800,  period_days:1.769},
+    {k:'europa',  n:'Europa',  c:'#d8e8ff', R:1560.8, parent:'jupiter', a_km:671100,  period_days:3.551},
+    {k:'ganymede',n:'Ganymede',c:'#e6d1b3', R:2634.1, parent:'jupiter', a_km:1070400, period_days:7.154},
+    {k:'callisto',n:'Callisto',c:'#bfa58a', R:2410.3, parent:'jupiter', a_km:1882700, period_days:16.689},
+    {k:'titan',   n:'Titan',   c:'#f3d7a6', R:2574.7, parent:'saturn',  a_km:1221870, period_days:15.945},
+    {k:'rhea',    n:'Rhea',    c:'#e8e8e8', R:763.8,  parent:'saturn',  a_km:527108,  period_days:4.518},
+    {k:'dione',   n:'Dione',   c:'#f0f0f0', R:561.4,  parent:'saturn',  a_km:377396,  period_days:2.737},
+    {k:'enceladus',n:'Enceladus',c:'#ffffff',R:252.1, parent:'saturn',  a_km:237948,  period_days:1.370},
+    {k:'iapetus', n:'Iapetus', c:'#f5f5f5', R:734.5,  parent:'saturn',  a_km:3560840, period_days:79.321},
+    {k:'titania', n:'Titania', c:'#cfdfff', R:788.9,  parent:'uranus',  a_km:436300,  period_days:8.706},
+    {k:'oberon',  n:'Oberon',  c:'#c9d7ff', R:761.4,  parent:'uranus',  a_km:583500,  period_days:13.463},
+    {k:'triton',  n:'Triton',  c:'#e0f6ff', R:1353.4, parent:'neptune', a_km:354759,  period_days:5.877},
+    {k:'charon',  n:'Charon',  c:'#e7e0f8', R:606,    parent:'pluto',   a_km:19571,   period_days:6.387}
+  ];
+
+  const AST_OBJECTS=[
+    {k:'ceres', n:'Ceres', c:'#b8ffe1', R:473, a:2.767, e:0.0758, i:10.59, O:80.33, w:73.6, L0:95.99, ndeg:0.214 },
+    {k:'vesta', n:'Vesta', c:'#ffd5b5', R:262, a:2.362, e:0.0887, i:7.14,  O:103.85,w:151.2,L0:310.19,ndeg:0.265 }
+  ];
+
+  const COMETS=[ {k:'halley', n:'1P/Halley', c:'#b1f1ff', R:5, a:17.8, e:0.967, i:162.3, O:58.4, w:111.3, L0:50.0, ndeg:0.0132} ];
+
+  // Ring systems (simplified true radii)
+  const RINGS = {
+    jupiter:{ inner_km: 92000,  outer_km: 129000, color:'rgba(255,220,200,0.05)' },
+    saturn: { inner_km: 74500,  outer_km: 140220, color:'rgba(255,245,210,0.15)' },
+    uranus: { inner_km: 38000,  outer_km: 51000,  color:'rgba(190,230,255,0.10)' },
+    neptune:{ inner_km: 42000,  outer_km: 63000,  color:'rgba(200,230,255,0.08)' }
+  };
+
+  // Belts & swarms
+  const BELT_MAIN=[]; const BELT_KUIPER=[]; const TROJ_L4=[]; const TROJ_L5=[];
+  const N_MAIN=2600, N_KUIP=2800, N_TROJ=900;
+  for(let i=0;i<N_MAIN;i++){ const a=2.2+Math.random()*1.2; const ecc=Math.random()*0.1; const phi0=Math.random()*Math.PI*2; BELT_MAIN.push({a,ecc,phi0}); }
+  for(let i=0;i<N_KUIP;i++){ const a=30+Math.random()*20; const ecc=Math.random()*0.2; const phi0=Math.random()*Math.PI*2; BELT_KUIPER.push({a,ecc,phi0}); }
+  for(let i=0;i<N_TROJ;i++){ TROJ_L4.push({dAng:(Math.random()-0.5)*0.6}); TROJ_L5.push({dAng:(Math.random()-0.5)*0.6}); }
+
+  // ---------- Textures (Solar System Scope via Wikimedia + NASA Pluto) ----------
+  const commons = name => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(name)}`;
+  const SPRITES = {
+    sun: commons('Solarsystemscope texture 2k sun.jpg'),
+    mercury: commons('Solarsystemscope texture 2k mercury.jpg'),
+    venus: commons('Solarsystemscope texture 2k venus atmosphere.jpg'),
+    earth: commons('Solarsystemscope texture 2k earth daymap.jpg'),
+    moon: commons('Solarsystemscope texture 2k moon.jpg'),
+    mars: commons('Solarsystemscope texture 2k mars.jpg'),
+    jupiter: commons('Solarsystemscope texture 2k jupiter.jpg'),
+    saturn: commons('Solarsystemscope texture 2k saturn.jpg'),
+    uranus: commons('Solarsystemscope texture 2k uranus.jpg'),
+    neptune: commons('Solarsystemscope texture 2k neptune.jpg'),
+    pluto: commons('Pluto color mapmosaic.jpg'),
+    ceres: commons('Solarsystemscope texture 2k ceres fictional.jpg'),
+    eris: commons('Solarsystemscope texture 4k eris fictional.jpg'),
+    haumea: commons('Solarsystemscope texture 4k haumea fictional.jpg'),
+    makemake: commons('Solarsystemscope texture 4k makemake fictional.jpg'),
+    quaoar: commons('Solarsystemscope texture 4k makemake fictional.jpg') // placeholder similar style
+  };
+  const images=new Map();
+  for(const [k,src] of Object.entries(SPRITES)){
+    const im=new Image(); im.crossOrigin='anonymous'; im.src=src; images.set(k,{img:im,ok:false}); im.onload=()=>{ images.get(k).ok=true; };
+  }
+
+  // ---------- Canvas & View ----------
+  const cv=document.getElementById('cv'); const ctx=cv.getContext('2d');
+  const tip=document.getElementById('tip'); const legend=document.getElementById('legend'); const info=document.getElementById('info');
+  const DPR=()=>Math.min(2, window.devicePixelRatio||1);
+  let W=0,H=0; function resize(){ W=cv.width = Math.floor((window.innerWidth)*DPR()); H=cv.height = Math.floor((window.innerHeight)*DPR()); cv.style.width=window.innerWidth+'px'; cv.style.height=window.innerHeight+'px'; computeZoomRange(); if(AUTO_FIT_ON_RESIZE) fitAll(); starfield=null; }
+
+  // World<->Screen transform
+  let scale = 1; // px per AU
+  let cx = 0, cy = 0; // world coords at screen center (AU)
+  function worldToScreen(x,y){ return {x:(x - cx)*scale + W/2, y:(y - cy)*scale + H/2}; }
+  function screenToWorld(x,y){ return {x:(x - W/2)/scale + cx, y:(y - H/2)/scale + cy}; }
+
+  // Zoom slider (log scale)
+  const zoomEl=document.getElementById('zoom'); const zoomVal=document.getElementById('zoomVal');
+  let scaleMin=1, scaleMax=1e6; // dynamic
+  function computeZoomRange(){
+    const minDim=Math.min(W,H)/DPR();
+    const maxA = Math.max(...PLANETS.map(p=>p.a), ...DWARFS.map(d=>d.a));
+    const pad=1.25; scaleMin = ( (minDim/2) * DPR() ) / (maxA*pad);
+    const allR=[]; [...PLANETS, ...DWARFS, ...AST_OBJECTS].forEach(o=>allR.push(o.R)); MOONS.forEach(m=>allR.push(m.R)); const Rmin=Math.min(...allR);
+    const targetR = (minDim*0.45) * DPR();
+    scaleMax = (targetR * AU_KM) / (Rmin * DPR());
+    scaleMax = Math.min(scaleMax, 2e10);
+    updateZoomSlider();
+  }
+  function updateZoomSlider(){ const lo=Math.log10(scaleMin), hi=Math.log10(scaleMax); const v=(Math.log10(scale)-lo)/(hi-lo); zoomEl.value=String(Math.min(1,Math.max(0,v))); zoomVal.textContent = `${(scale/scaleMin).toFixed(2)}×`; }
+  function setScaleFromSlider(){ const lo=Math.log10(scaleMin), hi=Math.log10(scaleMax); const f=+zoomEl.value; const s=10**(lo + f*(hi-lo)); const centerW = screenToWorld(W/2,H/2); scale=s; updateZoomSlider(); const after = worldToScreen(centerW.x, centerW.y); cx += (centerW.x - screenToWorld(after.x, after.y).x); cy += (centerW.y - screenToWorld(after.x, after.y).y); }
+  zoomEl.addEventListener('input', setScaleFromSlider);
+
+  function fitAll(){ const maxA = Math.max(...PLANETS.map(p=>p.a), ...DWARFS.map(d=>d.a)); const pad=1.25; const minDim=Math.min(W,H); scale = (minDim/2) / (maxA*pad); cx=0; cy=0; updateZoomSlider(); }
+  function fitInner(){ const R=2, pad=1.05, minDim=Math.min(W,H); scale = (minDim/2) / (R*pad); cx=0; cy=0; updateZoomSlider(); }
+  function fitTarget(){ const t = currentTarget(); if(!t) return; const minDim=Math.min(W,H); const rAU = (t.R / AU_KM); const targetPx = (minDim*0.35) * DPR(); scale = Math.max(scaleMin, Math.min(scaleMax, targetPx / rAU)); updateZoomSlider(); const p = getPos(t.k); if(p){ cx = p.x; cy = p.y; } }
+
+  // Pan/Zoom (mouse) + select by click
+  let isDragging=false, lastMouse={x:0,y:0};
+  cv.addEventListener('mousedown',e=>{ isDragging=true; lastMouse.x=e.clientX; lastMouse.y=e.clientY; TRACK.checked=false; });
+  window.addEventListener('mouseup',e=>{ if(isDragging===true){ const dx=e.clientX-lastMouse.x, dy=e.clientY-lastMouse.y; if(Math.hypot(dx,dy)<4){ selectByHit(e); } } isDragging=false; });
+  window.addEventListener('mousemove',e=>{ if(isDragging){ const dx=(e.clientX-lastMouse.x)*DPR(); const dy=(e.clientY-lastMouse.y)*DPR(); cx -= dx/scale; cy -= dy/scale; lastMouse.x=e.clientX; lastMouse.y=e.clientY; } hover(e); });
+  cv.addEventListener('wheel',e=>{ e.preventDefault(); const rect=cv.getBoundingClientRect(); const sx=(e.clientX-rect.left)*DPR(); const sy=(e.clientY-rect.top)*DPR(); const before=screenToWorld(sx,sy); const zoom=Math.exp(-e.deltaY*0.001); scale = Math.max(scaleMin*0.1, Math.min(scaleMax*1.05, scale*zoom)); const after=screenToWorld(sx,sy); cx += (before.x-after.x); cy += (before.y-after.y); updateZoomSlider(); }, {passive:false});
+
+  // UI wiring
+  const TARGET=document.getElementById('target'); const TRACK=document.getElementById('track');
+  document.getElementById('fitAll').onclick=fitAll; document.getElementById('fitInner').onclick=fitInner; document.getElementById('fitTarget').onclick=fitTarget;
+  const realtimeEl=document.getElementById('realtime'); const labelsEl=document.getElementById('labels'); const speedEl=document.getElementById('speed'); const beautyEl=document.getElementById('beauty'); const texOn=document.getElementById('texOn'); const orbitsOn=document.getElementById('orbitsOn');
+  let speedExpo=0; speedEl.addEventListener('input',()=>{ speedExpo=+speedEl.value; });
+
+  // Populate target menu
+  function addOpt(optgroup, arr){ const g=document.createElement('optgroup'); g.label=optgroup; arr.forEach(o=>{ const op=document.createElement('option'); op.value=o.k; op.textContent=o.n; g.appendChild(op); }); TARGET.appendChild(g); }
+  function buildTargets(){ TARGET.innerHTML=''; addOpt('Sun',[{k:'sun',n:'Sun',R:696340,c:'#ffe9b0'}]); addOpt('Planets', PLANETS.filter(p=>p.k!=='pluto')); addOpt('Pluto & Dwarfs', [PLANETS.find(p=>p.k==='pluto'), ...DWARFS]); addOpt('Moons', MOONS); addOpt('Asteroids', AST_OBJECTS); addOpt('Comets', COMETS); TARGET.value='earth'; }
+  buildTargets();
+
+  TARGET.addEventListener('change', ()=>{ TRACK.checked=true; const p = getPos(TARGET.value); if(p){ cx=p.x; cy=p.y; } });
+  function currentTarget(){ const k = TARGET.value; if(k==='sun') return {k:'sun', n:'Sun', R:696340, c:'#ffe9b0'}; const f = [...PLANETS, ...DWARFS, ...MOONS, ...AST_OBJECTS, ...COMETS].find(o=>o.k===k); return f||null; }
+
+  // Tooltip / hover
+  let hoverKey=null; let mouse={x:0,y:0}; function hover(e){ mouse.x=e.clientX; mouse.y=e.clientY; }
+
+  // Bodies cache (screen positions for hit testing)
+  const dots=[]; // {k,n,color,xs,ys,rpx}
+
+  // TRUE SCALE radii (px)
+  function rpxFromKm(Rkm){ return (Rkm / AU_KM) * scale * DPR(); }
+
+  // Color helpers
+  function hexToRGBA(hex, a){ if(!hex || hex[0]!=='#') return `rgba(200,220,255,${a})`; const n=parseInt(hex.slice(1),16); const r=(n>>16)&255,g=(n>>8)&255,b=n&255; return `rgba(${r},${g},${b},${a})`; }
+
+  // Ephemeris state
+  let time = new Date(); let last=performance.now(); let positions=new Map();
+  const AUTO_FIT_ON_RESIZE = true;
+
+  // Info panel
+  function num(n){ return (isFinite(n)? n.toLocaleString(undefined,{maximumFractionDigits:3}) : '—'); }
+  function renderInfo(){ const tgt = currentTarget(); if(!tgt){ info.style.display='none'; return; } const pos = getPos(tgt.k)||{x:0,y:0}; const earth = getPos('earth'); const rSun = Math.hypot(pos.x, pos.y); const rEarth = earth? Math.hypot(pos.x-earth.x, pos.y-earth.y):NaN; const period = (()=>{ const o=([...PLANETS, ...DWARFS, ...COMETS].find(p=>p.k===tgt.k)); if(o) return 360/o.ndeg; const m=MOONS.find(m=>m.k===tgt.k); if(m) return m.period_days; return NaN; })(); info.style.display='block'; info.innerHTML = `<div class="title"><span class="pill">${([...PLANETS].some(p=>p.k===tgt.k)?'Planet':DWARFS.some(d=>d.k===tgt.k)?'Dwarf':MOONS.some(m=>m.k===tgt.k)?'Moon':COMETS.some(c=>c.k===tgt.k)?'Comet':tgt.k==='sun'?'Star':'Asteroid')}</span>${tgt.n}</div><div class="row"><span>UTC</span><span>${time.toUTCString()}</span></div><div class="row"><span>Radius</span><span>${num(tgt.R)} km</span></div><div class="row"><span>r⊙</span><span>${num(rSun)} AU</span></div><div class="row"><span>Δ⊕</span><span>${num(rEarth)} AU • ${num(rEarth*LT_S_PER_AU)} s</span></div><div class="row"><span>Period</span><span>${isFinite(period)?num(period)+' d':'—'}</span></div>`; }
+
+  function getPos(k){ if(k==='sun') return {x:0,y:0}; return positions.get(k); }
+
+  // Main loop
+  function loop(){ const t=performance.now(); const dt=(t-last)/1000; last=t; if(realtimeEl.checked){ time = new Date(); } else { const mult = Math.sign(speedExpo)*Math.pow(10,Math.abs(speedExpo)) || 0; time = new Date(time.getTime() + dt*1000*mult); }
+    // positions
+    const dDays=daysSinceJ2000(time); const map=new Map(); PLANETS.forEach(p=>{ map.set(p.k, orbitalToXY(p.a,p.e,p.i,p.O,p.w,p.L0,p.ndeg,dDays)); }); DWARFS.forEach(d=>{ map.set(d.k, orbitalToXY(d.a,d.e,d.i,d.O,d.w,d.L0,d.ndeg,dDays)); }); AST_OBJECTS.forEach(a=>{ map.set(a.k, orbitalToXY(a.a,a.e,a.i,a.O,a.w,a.L0,a.ndeg,dDays)); }); COMETS.forEach(c=>{ map.set(c.k, orbitalToXY(c.a,c.e,c.i,c.O,c.w,c.L0,c.ndeg,dDays)); }); MOONS.forEach(m=>{ const parent = (m.parent==='sun')? {x:0,y:0} : map.get(m.parent); if(parent){ map.set(m.k, moonXY(parent, dDays, m)); } }); positions=map;
+
+    // Follow target (fixation)
+    if(TRACK.checked){ const tgt=currentTarget(); if(tgt){ const p = getPos(tgt.k); if(p){ cx = p.x; cy = p.y; } } }
+
+    // draw
+    drawScene(); renderInfo();
+    requestAnimationFrame(loop); }
+
+  // Starfield (cached to offscreen)
+  let starfield=null; function getStarfield(){ if(starfield) return starfield; const dpr=DPR(); const off=document.createElement('canvas'); off.width=Math.max(800, W); off.height=Math.max(600, H); const g=off.getContext('2d'); g.fillStyle='#0000'; g.fillRect(0,0,off.width,off.height); g.fillStyle='rgba(255,255,255,0.8)'; for(let i=0;i<Math.floor((off.width*off.height)/7000);i++){ const x=Math.random()*off.width, y=Math.random()*off.height; const r=(Math.random()*1.2+0.3)*dpr; g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); } starfield=off; return off; }
+
+  function drawScene(){ const dpr=DPR(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,W,H);
+    // backdrop
+    const sf=getStarfield(); const tilesX=Math.ceil(W/sf.width), tilesY=Math.ceil(H/sf.height); for(let ix=0;ix<tilesX;ix++){ for(let iy=0;iy<tilesY;iy++){ ctx.drawImage(sf, ix*sf.width, iy*sf.height); } }
+
+    const map = positions;
+
+    // Belts (true scale)
+    ctx.fillStyle='rgba(200,220,255,0.07)'; const dDays=daysSinceJ2000(time); for(const a of BELT_MAIN){ const n = 0.98560910 / Math.pow(a.a,1.5); const ang = (a.phi0 + (n*dDays)*DEG)%(Math.PI*2); const r = a.a*(1 - a.ecc*0.5*Math.cos(ang)); const s=worldToScreen(r*Math.cos(ang), r*Math.sin(ang)); ctx.fillRect(s.x, s.y, 1, 1); } ctx.fillStyle='rgba(200,220,255,0.05)'; for(const a of BELT_KUIPER){ const n = 0.98560910 / Math.pow(a.a,1.5); const ang = (a.phi0 + (n*dDays)*DEG)%(Math.PI*2); const r = a.a*(1 - a.ecc*0.5*Math.cos(ang)); const s=worldToScreen(r*Math.cos(ang), r*Math.sin(ang)); ctx.fillRect(s.x, s.y, 1, 1); }
+
+    // Jupiter Trojans
+    const j=map.get('jupiter'); if(j){ const angJ=Math.atan2(j.y,j.x); ctx.fillStyle='rgba(200,220,255,0.06)'; const a=PLANETS.find(p=>p.k==='jupiter').a; for(const p of TROJ_L4){ const ang=angJ + Math.PI/3 + p.dAng; const r=a*(0.98+Math.random()*0.04); const s=worldToScreen(r*Math.cos(ang), r*Math.sin(ang)); ctx.fillRect(s.x,s.y,1,1);} for(const p of TROJ_L5){ const ang=angJ - Math.PI/3 + p.dAng; const r=a*(0.98+Math.random()*0.04); const s=worldToScreen(r*Math.cos(ang), r*Math.sin(ang)); ctx.fillRect(s.x,s.y,1,1);} }
+
+    // Orbits — computed with same transform math used for positions (fix alignment)
+    if(orbitsOn.checked){ ctx.lineWidth=1*dpr; ctx.strokeStyle='rgba(200,220,255,0.18)';
+      function drawOrbit(a,e,i,O,w){ ctx.beginPath(); const steps=720; for(let k=0;k<=steps;k++){ const f=k/steps*2*Math.PI; const p=orbitalPoint(a,e,i,O,w,f); const s=worldToScreen(p.x,p.y); if(k===0) ctx.moveTo(s.x,s.y); else ctx.lineTo(s.x,s.y);} ctx.stroke(); }
+      PLANETS.forEach(p=>drawOrbit(p.a,p.e,p.i,p.O,p.w)); DWARFS.forEach(d=>drawOrbit(d.a,d.e,d.i,d.O,d.w)); AST_OBJECTS.forEach(a=>drawOrbit(a.a,a.e,a.i,a.O,a.w)); COMETS.forEach(c=>drawOrbit(c.a,c.e,c.i,c.O,c.w));
+      // moon orbits around current parent location, elliptical when data present
+      ctx.strokeStyle='rgba(200,220,255,0.15)'; MOONS.forEach(m=>{ const par=map.get(m.parent); if(!par) return; ctx.beginPath(); const steps=240; for(let k=0;k<=steps;k++){ const f=k/steps*2*Math.PI; const E = 2*Math.atan(Math.tan(f/2)*Math.sqrt((1-(m.e||0))/(1+(m.e||0)))); const rAU=(m.a_km/AU_KM)*(1 - (m.e||0)*Math.cos(E)); const cosO=Math.cos((m.OmegaDeg||0)*DEG), sinO=Math.sin((m.OmegaDeg||0)*DEG); const cosi=Math.cos((m.incDeg||0)*DEG), sini=Math.sin((m.incDeg||0)*DEG); const cosw=Math.cos((m.omegaDeg||0)*DEG), sinw=Math.sin((m.omegaDeg||0)*DEG); const xOrb=rAU*Math.cos(f), yOrb=rAU*Math.sin(f); const x1=cosw*xOrb - sinw*yOrb, y1=sinw*xOrb + cosw*yOrb; const x2=x1, y2=cosi*y1 - sini*0; const x3=cosO*x2 - sinO*y2, y3=sinO*x2 + cosO*y2; const s=worldToScreen(par.x+x3, par.y+y3); if(k===0) ctx.moveTo(s.x,s.y); else ctx.lineTo(s.x,s.y);} ctx.stroke(); });
+    }
+
+    // Sun (glow + disc)
+    const SunR_km = 696340; const S=worldToScreen(0,0); const sr = Math.max(0.5, rpxFromKm(SunR_km)); if(beautyEl.checked){ const g=ctx.createRadialGradient(S.x,S.y,0,S.x,S.y,sr*3); g.addColorStop(0,'rgba(255,240,180,0.35)'); g.addColorStop(1,'rgba(255,240,180,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(S.x,S.y,sr*3,0,Math.PI*2); ctx.fill(); }
+
+    // Rings
+    function drawRings(bodyKey){ const p=map.get(bodyKey); if(!p) return; const rdef=RINGS[bodyKey]; if(!rdef) return; const s=worldToScreen(p.x,p.y); const rin=(rdef.inner_km/AU_KM)*scale*dpr; const rout=(rdef.outer_km/AU_KM)*scale*dpr; if(rout>0.25){ const g=ctx.createRadialGradient(s.x,s.y,rin, s.x,s.y,rout); g.addColorStop(0, rdef.color); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(s.x,s.y,rout,0,Math.PI*2); ctx.arc(s.x,s.y,rin,0,Math.PI*2,true); ctx.fill('evenodd'); } }
+
+    // Dots / Sprites helper
+    dots.length=0;
+    function drawDiscSprite(k,n,color,Rkm){ const p=(k==='sun')?{x:0,y:0}:map.get(k); if(!p) return; const s=worldToScreen(p.x,p.y); const rpx = Math.max(0.5, rpxFromKm(Rkm));
+      // nice glow for visibility at tiny scales
+      if(beautyEl.checked){ const glow=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,Math.max(rpx*4,2*dpr)); glow.addColorStop(0, 'rgba(220,235,255,0.20)'); glow.addColorStop(1,'rgba(200,220,255,0)'); ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(s.x,s.y,Math.max(rpx*4,2*dpr),0,Math.PI*2); ctx.fill(); }
+      // sprite or dot
+      const rec = images.get(k); const canTex = texOn.checked && rec && rec.ok && rpx>2.5; if(canTex){
+        ctx.save(); ctx.beginPath(); ctx.arc(s.x,s.y,rpx,0,Math.PI*2); ctx.closePath(); ctx.clip();
+        ctx.drawImage(rec.img, s.x-rpx, s.y-rpx, rpx*2, rpx*2); ctx.restore();
+        ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.lineWidth=1*dpr; ctx.beginPath(); ctx.arc(s.x,s.y,rpx,0,Math.PI*2); ctx.stroke();
+      }else{
+        const disc=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,rpx); disc.addColorStop(0, hexToRGBA(color,0.95)); disc.addColorStop(1, hexToRGBA(color,0.85)); ctx.fillStyle=disc; ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.lineWidth=1*dpr; ctx.beginPath(); ctx.arc(s.x,s.y,rpx,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      }
+      dots.push({k,n,color,xs:s.x,ys:s.y,rpx}); if(labelsEl.checked && rpx*2>0.75){ ctx.fillStyle='rgba(230,240,255,0.92)'; ctx.font=(10*dpr)+'px ui-monospace,Menlo,Consolas'; ctx.textAlign='center'; ctx.fillText(n, s.x, s.y - (rpx+6*dpr)); }
+    }
+
+    // Bodies
+    drawDiscSprite('sun','Sun','#ffe9b0',SunR_km);
+    PLANETS.forEach(p=>drawDiscSprite(p.k,p.n,p.c,p.R)); DWARFS.forEach(d=>drawDiscSprite(d.k,d.n,d.c,d.R)); AST_OBJECTS.forEach(a=>drawDiscSprite(a.k,a.n,a.c,a.R)); COMETS.forEach(c=>drawDiscSprite(c.k,c.n,c.c, c.R)); drawRings('jupiter'); drawRings('saturn'); drawRings('uranus'); drawRings('neptune');
+
+    // Moons
+    const showMoonOrbits = (scale > 300) && orbitsOn.checked; ctx.strokeStyle='rgba(200,220,255,0.15)'; ctx.lineWidth=1*dpr; for(const m of MOONS){ const parent = map.get(m.parent); if(!parent) continue; if(showMoonOrbits){ // already drawn in orbits section, but keep subtle when zoomed
+      // no-op here; ellipse drawn above
+    }
+      drawDiscSprite(m.k,m.n,m.c,m.R);
+    }
+
+    // hover tip
+    const rect=cv.getBoundingClientRect(); const mx=(mouse.x-rect.left)*dpr, my=(mouse.y-rect.top)*dpr; let showTip=false; for(let i=dots.length-1;i>=0;i--){ const d=dots[i]; const dx=mx-d.xs, dy=my-d.ys; if(dx*dx+dy*dy <= (d.rpx+6*dpr)*(d.rpx+6*dpr)){ hoverKey=d.k; tip.style.left=mouse.x+'px'; tip.style.top=mouse.y+'px'; tip.innerHTML = d.n; tip.style.display='block'; showTip=true; break; } } if(!showTip){ tip.style.display='none'; hoverKey=null; }
+
+    legend.innerHTML = `${time.toUTCString()} · scale ${(scale/scaleMin).toFixed(2)}× · px/AU ${scale.toFixed(2)}<br><span style="opacity:.8">Textures: <a href="https://www.solarsystemscope.com/textures/" target="_blank">Solar System Scope</a> (CC BY 4.0) via Wikimedia Commons; Pluto map © NASA/USGS.</span>`;
+  }
+
+  function selectByHit(e){ const dpr=DPR(); const rect=cv.getBoundingClientRect(); const mx=(e.clientX-rect.left)*dpr, my=(e.clientY-rect.top)*dpr; for(let i=dots.length-1;i>=0;i--){ const d=dots[i]; const dx=mx-d.xs, dy=my-d.ys; if(dx*dx+dy*dy <= (d.rpx+6*dpr)*(d.rpx+6*dpr)){ TARGET.value=d.k; TRACK.checked=true; const p=getPos(d.k); if(p){ cx=p.x; cy=p.y; } renderInfo(); break; } }
+  }
+
+  // Kick
+  resize(); window.addEventListener('resize', resize, {passive:true});
+  fitAll();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
