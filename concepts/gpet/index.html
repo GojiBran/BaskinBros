@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Graxus — Virtual Pet + Economy (Goji Edition)</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
+<style>
+  :root{
+    --bg:#06080c; --panel:#0e1119; --ink:#eaf2ff; --muted:#223047;
+    --acc:#99cc33; --acc2:#7ad1ff; --danger:#ff6b6b; --good:#7dff7a;
+    --rad:14px; --gap:12px; --pad:12px; --chipPad:8px 12px;
+    --fs-10: clamp(9px, 1.2vw, 10px);
+    --fs-12: clamp(10px, 1.4vw, 12px);
+    --fs-14: clamp(12px, 1.6vw, 14px);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:radial-gradient(1200px 900px at 60% -10%, #1a2235 0%, #06080c 60%, #04060a 100%);
+    color:var(--ink); font:var(--fs-14)/1.35 'Press Start 2P', ui-monospace, Menlo, monospace;
+    overflow:hidden;
+  }
+
+  /* Background particles */
+  #bg{position:fixed; inset:0; z-index:0}
+
+  /* Layout wrapper */
+  #wrap{
+    position:relative; z-index:1; height:100vh; width:100vw;
+    display:grid; place-items:center; padding:max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+
+  .card{
+    width:min(1040px, 96vw);
+    background:linear-gradient(180deg, rgba(20,24,36,.94), rgba(10,12,18,.94));
+    border:2px solid var(--acc);
+    border-radius:var(--rad);
+    box-shadow:0 0 30px rgba(0,0,0,.6), inset 0 0 24px rgba(153,204,51,.08);
+    padding:16px;
+    display:grid; gap:var(--gap);
+  }
+
+  /* HUD */
+  .hud{
+    display:grid; grid-template-columns:1fr auto 1fr; gap:var(--gap); align-items:center;
+    margin-bottom:2px;
+  }
+  .title{font-size:var(--fs-12); letter-spacing:.5px; color:var(--acc2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .center{justify-self:center}
+  .right{justify-self:end; display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end}
+  .chip{
+    display:inline-flex; align-items:center; gap:8px; padding:var(--chipPad);
+    background:linear-gradient(180deg, #0c101a, #070a11);
+    border:1px solid var(--muted); border-radius:999px; font-size:var(--fs-10);
+    min-height:32px;
+  }
+  .led{width:8px; height:8px; border-radius:50%; background:#1b273d; box-shadow:0 0 8px #000 inset}
+  .led.on{background:var(--acc); box-shadow:0 0 12px var(--acc)}
+  .sep{opacity:.45}
+
+  /* Main grid */
+  .grid{
+    display:grid; grid-template-columns:340px 1fr; gap:var(--gap);
+    min-height:min(64vh, 560px);
+  }
+
+  /* Left column */
+  .viewport{
+    border:1px solid var(--muted); border-radius:var(--rad);
+    background:linear-gradient(180deg, rgba(15,18,25,.85), rgba(9,11,16,.85));
+    display:grid; grid-template-rows:auto 1fr auto; overflow:hidden;
+    padding:var(--pad); gap:var(--gap);
+  }
+  .petStage{
+    display:grid; place-items:center; position:relative; min-height:240px;
+    margin:4px;
+  }
+  .petFace{ font-size:56px; transition:transform .2s ease; text-shadow:0 0 8px rgba(122,209,255,.25); }
+  .petShadow{
+    position:absolute; bottom:16px; width:120px; height:14px; border-radius:50%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 70%); filter:blur(1px);
+  }
+  .dayCycle{
+    position:absolute; inset:0; pointer-events:none; mix-blend-mode:soft-light; opacity:.5;
+    background:radial-gradient(700px 500px at 80% 0%, rgba(122,209,255,.2), transparent 60%),
+               radial-gradient(800px 600px at 10% 100%, rgba(255,221,120,.12), transparent 60%);
+  }
+
+  .moodMsg{
+    padding:10px 12px; margin:0;
+    text-align:center; border:1px dashed var(--muted); border-radius:10px;
+    min-height:44px; font-size:var(--fs-12); color:#bcd7ff;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* Action pad */
+  .pad{
+    border:1px solid var(--muted); border-radius:12px; padding:10px;
+    background:linear-gradient(180deg, rgba(15,18,25,.78), rgba(9,11,16,.78));
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
+  }
+  .btn{
+    border:1px solid var(--acc); border-radius:10px; background:#0b0f17; color:var(--ink);
+    padding:10px; cursor:pointer; text-align:center; font-size:var(--fs-12); user-select:none;
+    transition:transform .05s ease, background .15s ease, box-shadow .15s ease;
+    min-height:42px; display:flex; align-items:center; justify-content:center;
+    outline:none;
+  }
+  .btn:hover{background:#111a2a; box-shadow:0 0 0 3px rgba(153,204,51,.15)}
+  .btn:active{transform:translateY(1px)}
+  .btn:focus-visible{box-shadow:0 0 0 3px rgba(122,209,255,.3)}
+  .btn.small{font-size:var(--fs-10); min-height:36px; padding:8px}
+  .btn.alt{border-color:var(--acc2)}
+
+  /* Right column */
+  .panel{
+    border:1px solid var(--muted); border-radius:var(--rad); padding:var(--pad);
+    background:linear-gradient(180deg, rgba(15,18,25,.85), rgba(9,11,16,.85));
+    display:grid; gap:var(--gap);
+    min-width:0; /* fix overflowing chips */
+  }
+
+  /* Needs list */
+  .needs{display:grid; gap:10px}
+  .need{
+    display:grid;
+    grid-template-columns:110px 1fr 56px;
+    align-items:center; gap:10px; font-size:var(--fs-10);
+    min-height:28px;
+  }
+  .need > div:first-child{white-space:nowrap}
+  .bar{
+    height:12px; background:#0c1018; border:1px solid #1b273d; border-radius:999px; overflow:hidden; position:relative;
+  }
+  .fill{
+    height:100%; width:0%; background:linear-gradient(90deg, var(--acc), #cfff8b);
+    box-shadow:0 0 10px rgba(153,204,51,.55); transition:width .25s ease-out;
+  }
+  .pct{width:56px; text-align:right; opacity:.85}
+  .bar.low .fill{background:linear-gradient(90deg, var(--danger), #ffb3b3); box-shadow:0 0 12px rgba(255,80,80,.6)}
+
+  .rows{display:flex; gap:8px; flex-wrap:wrap}
+  .rows .chip{margin:0}
+
+  /* Economy strip */
+  .eco{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
+  .eco .pad{grid-template-columns:repeat(4,1fr)}
+
+  /* Toasts */
+  .toasts{
+    position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:3;
+    max-width:min(56ch, 92vw);
+  }
+  .toast{
+    background:linear-gradient(180deg, #0c1018, #070a11); border:1px solid var(--muted); border-radius:10px;
+    padding:10px 12px; font-size:var(--fs-10); opacity:.96;
+    box-shadow:0 4px 18px rgba(0,0,0,.35); word-break:break-word;
+  }
+
+  /* Modals */
+  .modalBack{position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.6); z-index:4}
+  .modal{
+    width:min(640px, 92vw); max-height:min(80vh, 720px); overflow:auto;
+    background:linear-gradient(180deg, #0c1018, #090d14); border:1px solid var(--muted); border-radius:14px; padding:16px;
+  }
+  .modal h3{margin:0 0 10px 0; font-size:var(--fs-12); color:var(--acc2)}
+  .modal .close{float:right; cursor:pointer}
+  .shopRow{
+    display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:8px;
+    padding:8px 0; border-bottom:1px dashed rgba(255,255,255,.06);
+  }
+
+  /* Glitch toggle */
+  .glitchy{animation:glitch 1.1s infinite steps(2, end); text-shadow:1px 0 var(--acc2), -1px 0 var(--acc)}
+  @keyframes glitch{
+    0%{transform:translate(0,0)} 20%{transform:translate(1px,-1px)} 40%{transform:translate(-1px,1px)}
+    60%{transform:translate(1px,0)} 80%{transform:translate(-1px,0)} 100%{transform:translate(0,0)}
+  }
+
+  .mono{font-family:ui-monospace, Menlo, Consolas, monospace}
+  .muted{opacity:.75}
+
+  /* Responsive: stack columns on narrow screens */
+  @media (max-width: 880px){
+    .grid{ grid-template-columns: 1fr; }
+    .eco{ grid-template-columns:1fr; }
+    .pad{ grid-template-columns: repeat(3, 1fr); }
+    .need{ grid-template-columns: 90px 1fr 56px; }
+    .petFace{ font-size:48px; }
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important}
+  }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="wrap">
+  <div class="card">
+    <!-- HUD -->
+    <div class="hud">
+      <div class="title">Graxus v0.6 — economy • streaks • events</div>
+      <div class="center chip"><span class="led" id="ledSave"></span> SAVE <span class="sep">|</span> <span id="clock">--:--</span></div>
+      <div class="right">
+        <div class="chip">GBX: <span id="gbx">0</span></div>
+        <div class="chip">Streak: <span id="streak">0</span></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="viewport">
+        <div class="petStage">
+          <div class="dayCycle" id="dayCycle"></div>
+          <div class="petFace" id="petFace">(•◡•)</div>
+          <div class="petShadow"></div>
+        </div>
+
+        <div class="moodMsg mono" id="moodMsg">“hey goji — i like it when you press buttons.”</div>
+
+        <div class="pad">
+          <button class="btn" data-action="feed">🍕 Feed</button>
+          <button class="btn" data-action="play">🎮 Play</button>
+          <button class="btn" data-action="rest">💤 Rest</button>
+          <button class="btn alt" data-action="clean">🧼 Clean</button>
+          <button class="btn alt" data-action="kiss">💖 Kiss</button>
+          <button class="btn alt" data-action="chaos">⚡ Chaos</button>
+          <button class="btn small" data-action="snack">🍬 Snack</button>
+          <button class="btn small" data-action="joke">😹 Joke</button>
+          <button class="btn small" data-action="music">🎵 Vibe</button>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="panel">
+        <div class="needs" id="needsList"></div>
+
+        <div class="rows">
+          <div class="chip">Level <span id="lvl">1</span> • XP <span id="xp">0</span>/<span id="xpt">20</span></div>
+          <div class="chip">Inv: <span id="invSummary" class="muted">—</span></div>
+          <div class="chip">Quests: <span id="quests" class="muted">Daily ready</span></div>
+        </div>
+
+        <div class="eco">
+          <div class="pad">
+            <button class="btn small" id="btnDaily">🎁 Daily</button>
+            <button class="btn small" id="btnForage">🪙 Forage</button>
+            <button class="btn small" id="btnGamble">🎲 Gamble</button>
+            <button class="btn small" id="btnTip420">💨 Tip 4:20</button>
+          </div>
+          <div class="pad">
+            <button class="btn small" id="btnShop">🛒 Shop</button>
+            <button class="btn small" id="btnSave">💾 Save</button>
+            <button class="btn small" id="btnReset">♻️ Reset</button>
+            <button class="btn small" id="btnDebug">🐛 Debug</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toasts" id="toasts"></div>
+
+<!-- Shop Modal -->
+<div class="modalBack" id="modalShop" aria-modal="true" role="dialog">
+  <div class="modal">
+    <span class="close" data-close="modalShop" title="Close">✖</span>
+    <h3>Shop</h3>
+    <div class="muted" style="margin-bottom:8px">Items add to inventory and boost actions.</div>
+    <div id="shopList" class="mono" style="display:grid; gap:0"></div>
+  </div>
+</div>
+
+<!-- Debug Modal -->
+<div class="modalBack" id="modalDebug" aria-modal="true" role="dialog">
+  <div class="modal">
+    <span class="close" data-close="modalDebug" title="Close">✖</span>
+    <h3>Debug</h3>
+    <pre class="mono" style="white-space:pre-wrap; font-size:var(--fs-10)" id="debugText"></pre>
+  </div>
+</div>
+
+<script>
+/** =============================== *
+ *  G R A X U S   E N G I N E  v0.6
+ *  (UI-polished)
+ *  =============================== */
+
+const G = {
+  version: '0.6',
+  tickMs: 1500,
+  rng:(a=0,b=1)=> a + Math.random()*(b-a),
+  clamp:(v,lo=0,hi=100)=> Math.max(lo, Math.min(hi, v)),
+  now:()=>new Date(),
+  saveKey:'graxus_save_v6',
+  state:{
+    gbx:0, level:1, xp:0, xpTarget:20,
+    chaos:false, face:'(•◡•)', streak:0, lastDaily:null,
+    needs:{}, inv:{}, last420:null, quests:{dailyDone:false},
+  },
+  faces:{
+    happy:"(•◡•)", hungry:"(ಥ﹏ಥ)", bored:"(；一_一)", sleepy:"(≖_≖)",
+    dirty:"(>_<)", love:"(˘³˘)♡", chaos:"(⸮◐‿◑)", oops:"(x‿x)"
+  },
+  moodLines:{
+    ok:"feeling cute.", hungry:"my tummy is a void.", bored:"brain needs sillies.",
+    sleepy:"requesting nest.", dirty:"sticky pixels, ew.", love:"kiss me more.",
+    chaos:"rip & tear (gently)."
+  }
+};
+
+/* ===== Needs Definition ===== */
+const NEEDS_DEF = [
+  { key:'hunger',  label:'Hunger',  decay:1.0,  weight:1.3 },
+  { key:'fun',     label:'Fun',     decay:0.7,  weight:1.1 },
+  { key:'energy',  label:'Energy',  decay:0.5,  weight:1.2 },
+  { key:'clean',   label:'Hygiene', decay:0.6,  weight:0.9 },
+  { key:'love',    label:'Love',    decay:0.35, weight:1.0 },
+  { key:'chaos',   label:'Chaos',   decay:-0.15,weight:0.6 } // rises slowly
+];
+
+/* ===== Economy: Shop Items ===== */
+const SHOP = [
+  { id:'pizza', name:'🍕 Pizza', cost:12, desc:'+Feed boost for 5 uses', grant:{item:'pizza', uses:5} },
+  { id:'cart',  name:'🎮 Game Cart', cost:14, desc:'+Play boost for 5 uses', grant:{item:'cart', uses:5} },
+  { id:'soap',  name:'🧼 Soap', cost:8, desc:'Instant Clean on use', grant:{item:'soap', uses:3} },
+  { id:'heart', name:'💖 Heart Sticker', cost:16, desc:'+Love boost for 5 uses', grant:{item:'heart', uses:5} },
+  { id:'snax',  name:'🍬 Snack Pack', cost:10, desc:'+Snack potency +5 (3x)', grant:{item:'snax', uses:3} }
+];
+
+function invAdd(id, uses){
+  G.state.inv[id] = (G.state.inv[id]||0) + (uses||1);
+  renderInvSummary(); save();
+}
+function invUse(id, n=1){
+  if((G.state.inv[id]||0) >= n){ G.state.inv[id]-=n; if(G.state.inv[id]<=0) delete G.state.inv[id]; renderInvSummary(); save(); return true; }
+  return false;
+}
+function renderInvSummary(){
+  const entries = Object.entries(G.state.inv);
+  el.invSummary.textContent = entries.length? entries.map(([k,v])=> `${k}×${v}`).join(', ') : '—';
+}
+
+/* ===== Actions ===== */
+const ACTIONS = {
+  feed: s => {
+    let bonus = 0;
+    if(G.state.inv.pizza){ bonus += 10; invUse('pizza'); toast('pizza power +10 🍕'); }
+    addNeed('hunger', +22 + bonus); addNeed('energy', -4);
+    earn(1,'petting tax'); xp(2); bop();
+  },
+  snack: s => {
+    const snaxBoost = (G.state.inv.snax? 5 : 0);
+    if(snaxBoost && invUse('snax')) toast('snack pack +5 🍬');
+    addNeed('hunger', +12 + snaxBoost); xp(1);
+  },
+  play: s => {
+    let bonus = 0;
+    if(G.state.inv.cart){ bonus += 10; invUse('cart'); toast('retro cart +10 🎮'); }
+    addNeed('fun', +22 + bonus); addNeed('energy', -10);
+    earn(1,'joy dividend'); xp(2); jiggle(); say(rand([
+      "that combo was nasty","achievement: small silly","speedrun strats?","pressed to perfection"
+    ]));
+  },
+  rest: s => { addNeed('energy', +28); addNeed('hunger', -6); xp(2); calm(); toast('nap time 💤'); },
+  clean: s => {
+    if(G.state.inv.soap && invUse('soap')){ setNeed('clean', 100); toast('sparkling clean! 🧼'); }
+    else { setNeed('clean', Math.max(G.state.needs.clean, 85)); toast('tidied up'); }
+    xp(1); sparkle();
+  },
+  kiss: s => { addNeed('love', +24); xp(2); heart(); say("mmwah 💖"); },
+  joke: s => { addNeed('fun', +14); xp(1); say("i byte, but i'm gentle."); },
+  music:s => { addNeed('fun', +10); addNeed('energy', +6); wave(); toast('ambient vibes 🎵'); },
+  chaos:s => { G.state.chaos = !G.state.chaos; addNeed('chaos', G.state.chaos? +20 : -15); glitch(G.state.chaos); toast(G.state.chaos?"chaos mode ⚡":"calm restored 🌿"); }
+};
+
+/* ===== DOM ===== */
+const el = {
+  needsList: document.getElementById('needsList'),
+  face: document.getElementById('petFace'),
+  mood: document.getElementById('moodMsg'),
+  gbx: document.getElementById('gbx'),
+  streak: document.getElementById('streak'),
+  lvl: document.getElementById('lvl'),
+  xp: document.getElementById('xp'),
+  xpt: document.getElementById('xpt'),
+  ledSave: document.getElementById('ledSave'),
+  clock: document.getElementById('clock'),
+  dayCycle: document.getElementById('dayCycle'),
+  invSummary: document.getElementById('invSummary'),
+  quests: document.getElementById('quests'),
+  btnDaily: document.getElementById('btnDaily'),
+  btnForage: document.getElementById('btnForage'),
+  btnGamble: document.getElementById('btnGamble'),
+  btnTip420: document.getElementById('btnTip420'),
+  btnShop: document.getElementById('btnShop'),
+  btnSave: document.getElementById('btnSave'),
+  btnReset: document.getElementById('btnReset'),
+  btnDebug: document.getElementById('btnDebug'),
+  modalShop: document.getElementById('modalShop'),
+  modalDebug: document.getElementById('modalDebug'),
+  shopList: document.getElementById('shopList'),
+  debugText: document.getElementById('debugText'),
+  toasts: document.getElementById('toasts')
+};
+
+/* ===== Build Needs UI ===== */
+function buildNeeds(){
+  el.needsList.innerHTML='';
+  NEEDS_DEF.forEach(def=>{
+    const row = document.createElement('div'); row.className='need'; row.dataset.key=def.key;
+    const label = document.createElement('div'); label.textContent = def.label;
+    const bar = document.createElement('div'); bar.className='bar';
+    const fill = document.createElement('div'); fill.className='fill'; fill.id='fill_'+def.key;
+    bar.appendChild(fill);
+    const pct = document.createElement('div'); pct.className='pct'; pct.id='pct_'+def.key; pct.textContent='--%';
+    row.append(label, bar, pct);
+    el.needsList.appendChild(row);
+  });
+}
+
+/* ===== Init State ===== */
+function initState(){ NEEDS_DEF.forEach(d=> G.state.needs[d.key] = 80); }
+function setNeed(key, val){ G.state.needs[key] = G.clamp(val); renderNeed(key); }
+function addNeed(key, delta){ setNeed(key, (G.state.needs[key] ?? 0) + delta); }
+function renderNeed(key){
+  const v = Math.round(G.state.needs[key]);
+  const f = document.getElementById('fill_'+key);
+  const p = document.getElementById('pct_'+key);
+  if(!f || !p) return;
+  p.textContent = v + '%';
+  f.parentElement.classList.toggle('low', v<30);
+  gsap.to(f, { width: v + '%', duration:.25, ease:'power2.out' });
+}
+
+/* ===== Mood / Face ===== */
+function computeMood(){
+  const weakest = NEEDS_DEF
+    .map(d=>({k:d.key, v: (d.key==='chaos')? 100-(G.state.needs[d.key]||0) : (G.state.needs[d.key]||0)}))
+    .sort((a,b)=>a.v-b.v)[0];
+
+  let face = G.faces.happy, line = G.moodLines.ok;
+  if(weakest.k==='hunger' && weakest.v<40){ face=G.faces.hungry; line=G.moodLines.hungry; }
+  else if(weakest.k==='fun' && weakest.v<40){ face=G.faces.bored;  line=G.moodLines.bored; }
+  else if(weakest.k==='energy' && weakest.v<40){ face=G.faces.sleepy; line=G.moodLines.sleepy; }
+  else if(weakest.k==='clean' && weakest.v<40){ face=G.faces.dirty; line=G.moodLines.dirty; }
+  else if(weakest.k==='love' && weakest.v<40){ face=G.faces.love;  line=G.moodLines.love; }
+  if(G.state.chaos){ face=G.faces.chaos; line=G.moodLines.chaos; }
+
+  G.state.face = face; el.face.textContent = face; el.mood.textContent = line;
+}
+
+/* ===== Animations ===== */
+function bop(){ gsap.fromTo(el.face, {y:-6}, {y:0, duration:.2, ease:'bounce.out'}); }
+function jiggle(){ gsap.to(el.face, {rotation:2, yoyo:true, repeat:3, duration:.08}); }
+function calm(){ gsap.to(el.face, {scale:1, duration:.3}); }
+function sparkle(){ gsap.fromTo(el.face, {textShadow:'0 0 0px rgba(255,255,255,0)'},{textShadow:'0 0 16px rgba(255,255,255,.9)', yoyo:true, repeat:1, duration:.18}); }
+function heart(){ toast('grax blushes (˘³˘)♡'); gsap.to(el.face, {scale:1.12, yoyo:true, repeat:1, duration:.18}); }
+function wave(){ gsap.to(el.face, {x:4, yoyo:true, repeat:7, duration:.08}); }
+function glitch(on){ el.face.classList.toggle('glitchy', !!on); }
+
+/* ===== XP/Level ===== */
+function xp(n){ G.state.xp += n||1; if(G.state.xp >= G.state.xpTarget){ G.state.level++; G.state.xp=0; G.state.xpTarget = Math.round(G.state.xpTarget*1.4); toast('level up! ⭐'); jiggle(); } renderLevel(); }
+function renderLevel(){ el.lvl.textContent = G.state.level; el.xp.textContent = G.state.xp; el.xpt.textContent = G.state.xpTarget; }
+
+/* ===== Loop ===== */
+function tick(){
+  NEEDS_DEF.forEach(d=>{
+    const cur = G.state.needs[d.key] ?? 0;
+    const drift = -d.decay + (G.state.chaos ? (d.key==='fun'? +0.7 : 0) : 0);
+    setNeed(d.key, cur + drift);
+  });
+  computeMood();
+  updateClock();
+  dayNightPaint();
+  randomEvent();
+  check420();
+}
+
+/* ===== Clock / DayNight ===== */
+function updateClock(){
+  const d=new Date(); const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0');
+  el.clock.textContent = `${hh}:${mm}`;
+}
+function dayNightPaint(){ const h=new Date().getHours(); el.dayCycle.style.opacity = (h>=6 && h<=18) ? 0.45 : 0.15; }
+
+/* ===== 4:20 ===== */
+function check420(){
+  const now = new Date();
+  const stamp = now.toDateString() + ' ' + now.getHours() + ':' + now.getMinutes();
+  if((now.getHours()===4 || now.getHours()===16) && now.getMinutes()===20){
+    if(G.state.last420 !== stamp){
+      G.state.last420 = stamp; fourTwenty();
+    }
+  }
+}
+function fourTwenty(){
+  addNeed('fun', +28); addNeed('love', +12); addNeed('hunger', -5); xp(3);
+  earn(10, '420 vibes'); partyToasts(["4:20 blaze adorable 💨","sparkle sparkle ✨","gbx +10"]);
+  for(let i=0;i<16;i++){
+    const t=document.createElement('div'); t.textContent = i%2? '💚':'💨';
+    Object.assign(t.style,{position:'fixed', left:(G.rng(10,90))+'vw', top:'-4vh', fontSize:'20px', zIndex:5});
+    document.body.appendChild(t);
+    gsap.to(t,{y: G.rng(70,92)+'vh', rotation:G.rng(-180,180), duration:G.rng(1.2,2.2), onComplete:()=>t.remove()});
+  }
+}
+function partyToasts(arr){ arr.forEach((msg,i)=> setTimeout(()=> toast(msg), i*300)); }
+
+/* ===== Random Events ===== */
+function randomEvent(){
+  if(Math.random() < 0.06){
+    const roll = Math.random();
+    if(roll < .34){ earn(1,'found coin'); toast('found a coin on the floor 🪙'); }
+    else if(roll < .68){ addNeed('fun', +4); toast('watched a tiny bug do a flip'); }
+    else { addNeed('love', +3); toast('grax winked at you'); }
+  }
+}
+
+/* ===== Toasts ===== */
+function toast(msg){
+  const n = document.createElement('div'); n.className='toast'; n.textContent=msg;
+  el.toasts.appendChild(n);
+  gsap.fromTo(n,{y:20, opacity:0},{y:0, opacity:1, duration:.2});
+  setTimeout(()=>{ gsap.to(n,{y:-10, opacity:0, duration:.25, onComplete:()=>n.remove()}); }, 2200);
+}
+
+/* ===== Economy Core ===== */
+function renderGBX(){ el.gbx.textContent = G.state.gbx|0; }
+function earn(amount,label){ G.state.gbx += amount|0; renderGBX(); saveLED(); }
+function spend(cost,label){
+  if(G.state.gbx >= cost){ G.state.gbx -= cost; renderGBX(); saveLED(); return true; }
+  toast('not enough GBX'); return false;
+}
+
+/* Daily Bonus + Streak */
+function canDaily(){
+  const last = G.state.lastDaily? new Date(G.state.lastDaily) : null;
+  if(!last) return true;
+  const now = new Date();
+  const diffDays = Math.floor((now - new Date(last.toDateString())) / 86400000);
+  return diffDays >= 1;
+}
+function doDaily(){
+  if(!canDaily()) { toast('daily already claimed'); return; }
+  const now = new Date();
+  const last = G.state.lastDaily? new Date(G.state.lastDaily) : null;
+  let streakUp = false;
+  if(last){
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+    if(last.toDateString() === yesterday.toDateString()){ G.state.streak++; streakUp = true; }
+    else { G.state.streak = 1; }
+  } else { G.state.streak = 1; }
+  const reward = 10 + Math.min(20, G.state.streak*2);
+  earn(reward, 'daily');
+  G.state.lastDaily = now.toISOString();
+  el.streak.textContent = G.state.streak;
+  el.quests.textContent = `Daily claimed (+${reward})`;
+  toast(`daily +${reward} GBX ${streakUp?'(streak!)':''}`);
+  save();
+}
+
+/* Forage (auto job for 6 seconds) */
+let forageTimer=null, forageTicks=0;
+function startForage(){
+  if(forageTimer) return;
+  forageTicks=0; toast('foraging...');
+  forageTimer = setInterval(()=>{
+    forageTicks++;
+    const got = Math.random()<0.8 ? 1 : 0; if(got) earn(1,'forage');
+    if(forageTicks>=6){ clearInterval(forageTimer); forageTimer=null; toast('forage done'); }
+  }, 1000);
+}
+
+/* Gamble coin flip (2 GBX) */
+function gamble(){
+  const cost=2; if(!spend(cost,'gamble')) return;
+  const win = Math.random() < 0.48;
+  if(win){ const prize=4; earn(prize,'gamble'); toast('won +4 🎲'); jiggle(); }
+  else{ toast('lost it 😵'); }
+}
+
+/* Tip 4:20 (1 GBX → fun+2 love+2) */
+function tip420(){
+  if(!spend(1,'tip420')) return;
+  addNeed('fun', +2); addNeed('love', +2);
+  toast('💨 tip delivered');
+}
+
+/* ===== Save / Load ===== */
+function saveLED(){ el.ledSave.classList.add('on'); setTimeout(()=>el.ledSave.classList.remove('on'), 550); }
+function save(){ localStorage.setItem(G.saveKey, JSON.stringify(G.state)); saveLED(); }
+function load(){
+  const raw = localStorage.getItem(G.saveKey); if(!raw) return false;
+  try{ const s = JSON.parse(raw); if(s && s.needs){ G.state = Object.assign({}, G.state, s); return true; } }
+  catch(e){}
+  return false;
+}
+function reset(){ localStorage.removeItem(G.saveKey); location.reload(); }
+
+/* ===== Particles ===== */
+function initParticles(){
+  if(!window.particlesJS) return;
+  particlesJS('bg', {
+    "particles":{"number":{"value":34},"color":{"value":["#99cc33","#7ad1ff","#ffffff"]},
+      "shape":{"type":"circle"},"opacity":{"value":0.45},"size":{"value":2,"random":true},
+      "line_linked":{"enable":true,"distance":110,"color":"#7ad1ff","opacity":0.22,"width":1},
+      "move":{"enable":true,"speed":1.0}
+    },
+    "interactivity":{"events":{"onhover":{"enable":true,"mode":"repulse"}},"modes":{"repulse":{"distance":80}}},
+    "retina_detect":true
+  });
+}
+
+/* ===== UI: Shop ===== */
+function renderShop(){
+  el.shopList.innerHTML='';
+  SHOP.forEach(item=>{
+    const row = document.createElement('div'); row.className='shopRow';
+    const name = document.createElement('div'); name.textContent = `${item.name} — ${item.desc}`;
+    const price = document.createElement('div'); price.textContent = `${item.cost} GBX`; price.className='muted';
+    const buy = document.createElement('button'); buy.className='btn small'; buy.textContent='Buy';
+    buy.onclick = ()=>{
+      if(spend(item.cost, 'shop:'+item.id)){
+        invAdd(item.grant.item, item.grant.uses || 1);
+        toast(`bought ${item.name} ×${item.grant.uses||1}`);
+        save();
+      }
+    };
+    row.append(name, price, buy);
+    el.shopList.appendChild(row);
+  });
+}
+function showModal(id){ document.getElementById(id).style.display='grid'; }
+function hideModal(id){ document.getElementById(id).style.display='none'; }
+
+/* ===== Keyboard & Wiring ===== */
+function wire(){
+  document.querySelectorAll('[data-action]').forEach(btn=>{
+    const a = btn.dataset.action;
+    btn.addEventListener('click', ()=>{
+      const fx = ACTIONS[a]; if(!fx) return;
+      fx(G.state); renderAllNeeds(); computeMood(); save();
+    });
+  });
+
+  el.btnShop.onclick = ()=>{ renderShop(); showModal('modalShop'); };
+  el.btnDebug.onclick= ()=>{ el.debugText.textContent = JSON.stringify(G.state,null,2); showModal('modalDebug'); };
+  el.btnSave.onclick = save;
+  el.btnReset.onclick= reset;
+  el.btnDaily.onclick= doDaily;
+  el.btnForage.onclick= startForage;
+  el.btnGamble.onclick= gamble;
+  el.btnTip420.onclick= tip420;
+
+  document.querySelectorAll('.close').forEach(x=> x.onclick = ()=> hideModal(x.dataset.close));
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){ hideModal('modalShop'); hideModal('modalDebug'); }
+    if(e.key==='1') ACTIONS.feed();
+    if(e.key==='2') ACTIONS.play();
+    if(e.key==='3') ACTIONS.rest();
+  });
+}
+
+/* ===== Helpers ===== */
+function rand(a){ return a[Math.floor(Math.random()*a.length)] }
+function renderAllNeeds(){ Object.keys(G.state.needs).forEach(renderNeed); }
+
+/* ===== Public Plugin API ===== */
+window.Graxus = {
+  registerNeed(def){ if(!def || !def.key) return; NEEDS_DEF.push(def); G.state.needs[def.key] = def.init ?? 80; buildNeeds(); renderAllNeeds(); save(); },
+  registerAction(name, fx){ ACTIONS[name]=fx; const pad=document.querySelector('.pad'); const b=document.createElement('button'); b.className='btn small'; b.dataset.action=name; b.textContent=name; b.onclick=()=>{ fx(G.state); renderAllNeeds(); computeMood(); save(); }; pad.appendChild(b); },
+  addGBX:n=>{ G.state.gbx+=n|0; renderGBX(); save(); },
+  get state(){ return G.state; }, save, reset
+};
+
+/* ===== Bootstrap ===== */
+function start(){
+  buildNeeds();
+  if(!load()){ initState(); G.state.gbx=25; save(); }
+  renderGBX(); renderInvSummary(); renderAllNeeds(); computeMood(); renderLevel();
+  el.streak.textContent = G.state.streak||0;
+  el.quests.textContent = canDaily()? 'Daily ready' : 'Daily claimed';
+
+  wire(); initParticles();
+  updateClock(); dayNightPaint(); check420();
+
+  // Idle bob
+  gsap.to(el.face, {y:-2, yoyo:true, repeat:-1, duration:1.4, ease:'sine.inOut'});
+
+  // Loop
+  setInterval(tick, G.tickMs);
+}
+start();
+</script>
+</body>
+</html>
