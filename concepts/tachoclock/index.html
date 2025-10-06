@@ -53,7 +53,15 @@
 <script>
 "use strict";
 (() => {
-  const state = { composite:true, hourPop:5.0, minPop:5.0, calOffset:0.00, calGain:1.000 };
+  // hourSnapMode: 'hour' | 'half' | 'quarter'
+  const state = {
+    composite:true,
+    hourPop:5.0,
+    minPop:5.0,
+    calOffset:0.00,
+    calGain:1.000,
+    hourSnapMode:'hour'   // <- change to 'quarter' or 'half' if you want
+  };
 
   const canvas = document.getElementById('gauge');
   const ctx = canvas.getContext('2d');
@@ -89,10 +97,21 @@
     return 'seconds';
   }
 
+  // Hour snap helper
+  function snappedHourIndex(h, m){
+    if(state.hourSnapMode === 'hour')   return h;
+    if(state.hourSnapMode === 'half')   return h + (m>=30 ? 0.5 : 0.0);
+    // 'quarter' — clamp within current hour (no early roll to h+1.0)
+    const q = Math.min(3, Math.round(m/15)); // 0..3 nearest, but max 3
+    return h + q*0.25;
+  }
+
+  // Minutes exact; Hours snapped per mode
   function baseIndexFor(mode, now){
     if(mode==='seconds'){ return (now.getSeconds()/60)*6; }   // 0..6
     if(mode==='minutes'){ return (now.getMinutes()/60)*6; }   // 0..6
-    return now.getHours()%12;                                 // 0..11
+    const h = now.getHours()%12, m = now.getMinutes();
+    return snappedHourIndex(h, m);                            // 0..11
   }
   function calibrate(idx){ idx = state.calOffset + state.calGain*idx; return Math.max(0, Math.min(11, idx)); }
 
@@ -111,8 +130,8 @@
 
     drawBezel(cx,cy,R);
     drawFace(cx,cy,R);
-    drawRedline(cx,cy,R);
-    drawTicks(cx,cy,R);
+    drawRedline(cx,cy,R);   // behind
+    drawTicks(cx,cy,R);     // on top
 
     const now = new Date();
     const newMode = selectMode(now);
@@ -174,16 +193,16 @@
   function drawTicks(cx,cy,R){
     const rOuter=R*(CFG.bezelRatio-.06);
     const rMaj=rOuter - Math.max(16,R*.065);
-    const rMin=rOuter - Math.max(9, R*.036);           // <- minor tick inner (our “tall” tween target)
+    const rMin=rOuter - Math.max(9, R*.036);           // tall tween height
     const labelInset = Math.max(26, R*.092);
 
     // Base majors/minors across 0..11, but SKIP minors when idx >= 6
     const steps=(CFG.ticksMajor-1)*5; // 0.2 steps
     for(let i=0;i<=steps;i++){
       const frac=i/steps;
-      const idx = i/5; // 0,0.2,...,11
+      const idx = i/5;                 // 0,0.2,...,11
       const isMajor = (i%5===0);
-      if(!isMajor && idx>=6) continue;                   // no alternating minors in 6..11
+      if(!isMajor && idx>=6) continue; // remove alternating minors in 6..11
       const ang=deg2rad(CFG.startDeg + frac*(CFG.endDeg-CFG.startDeg));
       ctx.strokeStyle=isMajor?getCss('--goji'):getCss('--goji-dim');
       ctx.lineWidth=isMajor?3:1.6;
@@ -208,18 +227,22 @@
       ctx.lineTo(Math.round(x2)+.5,Math.round(y2)+.5); ctx.stroke();
     }
 
-    // Fine ticks 6..11 — ALL TALL (inner = rMin), uniform height, .5 brighter
-    const sub=10; // 10 ticks per index
-    for(let n=6*sub+1; n<11*sub; n++){     // exclude exact 6 & 11 (majors already drawn)
-      const idx = n/sub;
-      const isHalf = (n % sub) === (sub/2); // .5 positions
-      const ang = valToAngle(idx, 0, 11);
-      const x1=cx+Math.cos(ang)*rMin, y1=cy+Math.sin(ang)*rMin;   // <- tall height
-      const x2=cx+Math.cos(ang)*rOuter, y2=cy+Math.sin(ang)*rOuter;
-      ctx.strokeStyle = isHalf ? getCss('--goji') : getCss('--goji-dim');
-      ctx.lineWidth   = isHalf ? 2 : 1.2;
-      ctx.beginPath(); ctx.moveTo(Math.round(x1)+.5,Math.round(y1)+.5);
-      ctx.lineTo(Math.round(x2)+.5,Math.round(y2)+.5); ctx.stroke();
+    // 6..11 band: .25, .5, .75 — all tall (inner = rMin)
+    for(let h=6; h<11; h++){
+      for(const spec of [
+        {f:0.25, w:1.4, c:getCss('--goji-dim')},
+        {f:0.50, w:2.0, c:getCss('--goji')},
+        {f:0.75, w:1.4, c:getCss('--goji-dim')}
+      ]){
+        const idx = h + spec.f;
+        const ang = valToAngle(idx, 0, 11);
+        const x1=cx+Math.cos(ang)*rMin,   y1=cy+Math.sin(ang)*rMin;
+        const x2=cx+Math.cos(ang)*rOuter, y2=cy+Math.sin(ang)*rOuter;
+        ctx.strokeStyle = spec.c;
+        ctx.lineWidth   = spec.w;
+        ctx.beginPath(); ctx.moveTo(Math.round(x1)+.5,Math.round(y1)+.5);
+        ctx.lineTo(Math.round(x2)+.5,Math.round(y2)+.5); ctx.stroke();
+      }
     }
 
     // Numerals 0..11
@@ -233,6 +256,7 @@
     }
   }
 
+  // redline: solid #6633cc, exactly 8–11, behind ticks, square ends
   function drawRedline(cx,cy,R){
     const rOuter=R*(CFG.bezelRatio-.06);
     const lw=Math.max(8,R*.035);
@@ -244,6 +268,7 @@
     ctx.beginPath(); ctx.arc(cx,cy,r,a0,a1); ctx.stroke();
   }
 
+  // needle (tapered red)
   function drawNeedleTapered(cx,cy,R,ang,style){
     const L=R*style.len, T=R*style.tail, W=R*style.base;
     ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang);
