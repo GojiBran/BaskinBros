@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Goji Tachometer Clock</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0d10;  --bg-grad-1:#0b0d10; --bg-grad-2:#08090d;
+    --ink:#e6ffe0; --muted:#7aa47a;
+    --goji:#99cc33; --goji-dim:#6ea323;
+    --redline:#6633cc;
+    --shadow:rgba(0,0,0,.38);
+    --ring-outer:#12161c; --ring-line:#212937;
+    --face-top:#0d1116; --face-bot:#0b0f13;
+
+    /* Needle styling (red) */
+    --needle:#ff2b45;
+    --needle-glow:rgba(255, 43, 69, .25);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 900px at 70% 20%, var(--bg-grad-1) 0%, var(--bg-grad-2) 60%, #05070a 100%),
+      var(--bg);
+    color:var(--ink);
+    font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    display:grid; place-items:center;
+  }
+
+  .wrap{ width:min(92vmin,1100px); aspect-ratio:1/1; position:relative; filter:drop-shadow(0 20px 40px var(--shadow)); }
+  canvas{ width:100%; height:100%; display:block; border-radius:24px; }
+
+  .brand{
+    position:absolute; top:.7rem; width:100%; text-align:center;
+    font-family:"Press Start 2P", monospace; letter-spacing:.06em; opacity:.8;
+    color:var(--goji);
+    font-size:clamp(.6rem,1.6vw,.9rem);
+    text-shadow:0 1px 0 #000; pointer-events:none;
+  }
+
+  .scanlines{
+    pointer-events:none; position:absolute; inset:0; border-radius:24px;
+    background-image: linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,.12) 50%);
+    background-size: 100% 3px; mix-blend-mode: soft-light;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap" id="app">
+    <div class="brand">GOJI TACHO CLOCK // 0–11 HOUR • SEC/MIN: 0–6</div>
+    <canvas id="gauge" width="1200" height="1200"></canvas>
+    <div class="scanlines" aria-hidden="true"></div>
+  </div>
+
+<script>
+"use strict";
+(() => {
+  // ---------- options ----------
+  const state = {
+    composite:  true,   // hour pop then minute pop each minute
+    hourPop:    5.0,    // HOURS mode shown (seconds)
+    minPop:     5.0,    // MINUTES mode shown (seconds)
+    calOffset:  0.00,   // index offset
+    calGain:    1.000   // scale multiplier
+  };
+
+  // ---------- DOM ----------
+  const canvas = document.getElementById('gauge');
+  const ctx = canvas.getContext('2d');
+
+  // ---------- sizing ----------
+  function fitCanvas(){
+    const r = canvas.getBoundingClientRect();
+    const d = Math.max(1, devicePixelRatio||1);
+    canvas.width = Math.round(r.width*d);
+    canvas.height= Math.round(r.height*d);
+    ctx.setTransform(d,0,0,d,0,0);
+  }
+  addEventListener('resize', fitCanvas); fitCanvas();
+
+  // ---------- dial config ----------
+  const CFG = {
+    startDeg:-270, endDeg:0,      // 270° sweep
+    bezelRatio:.92,
+    ticksMajor:12,
+    redlineFrom:8, redlineTo:11.0
+  };
+  const deg2rad = d => d*Math.PI/180;
+  function valToAngle(v, min, max){
+    const t=(v-min)/(max-min);
+    return deg2rad(CFG.startDeg + t*(CFG.endDeg-CFG.startDeg));
+  }
+
+  // ---------- composite selector ----------
+  const Phase = { NONE:0, HOURS:1, MINUTES:2 };
+  let phase = Phase.NONE, phaseUntil = 0, lastMinute = null, initialized=false;
+
+  function selectMode(now){
+    const ts = now.getTime()/1000;
+    if (!initialized){ initialized=true; lastMinute=now.getMinutes(); return 'seconds'; }
+    if (state.composite && now.getMinutes() !== lastMinute){
+      lastMinute = now.getMinutes();
+      phase = Phase.HOURS; phaseUntil = ts + state.hourPop; return 'hours';
+    }
+    if (!state.composite) return 'seconds';
+    if (phase !== Phase.NONE){
+      if (ts < phaseUntil) return phase===Phase.HOURS?'hours':'minutes';
+      if (phase===Phase.HOURS){ phase=Phase.MINUTES; phaseUntil = ts + state.minPop; return 'minutes'; }
+      phase = Phase.NONE; return 'seconds';
+    }
+    return 'seconds';
+  }
+
+  // ---------- base indices (no fractional mixing) ----------
+  function baseIndexFor(mode, now){
+    if (mode==='seconds'){
+      const s = now.getSeconds();     // tick base
+      return (s/60)*6;                // 0..6
+    }
+    if (mode==='minutes'){
+      const m = now.getMinutes();     // exact minute
+      return (m/60)*6;                // 0..6
+    }
+    return now.getHours()%12;         // exact hour 0..11
+  }
+
+  // ---------- calibration ----------
+  function calibrate(idx){
+    idx = state.calOffset + state.calGain * idx;
+    return Math.max(0, Math.min(11, idx));
+  }
+
+  // ---------- easing ----------
+  const easeOutCubic   = t => 1 - Math.pow(1 - t, 3);
+  const easeInOutCubic = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+
+  // seconds tick-glide
+  let displayIdx = 0;
+  let modeName   = 'seconds';
+  let lastSecond = -1, secTweenActive=false, secTweenStart=0, secTweenDur=220, secTweenFrom=0, secTweenTo=0;
+
+  // slower entry tween for hours/minutes (smooth, target is snapped)
+  let entryTweenActive=false, entryStart=0, entryDur=0, entryFrom=0, entryTo=0;
+  function startEntryTween(to, dur){
+    entryFrom = displayIdx;
+    entryTo   = to;
+    entryDur  = dur;
+    entryStart= performance.now();
+    entryTweenActive = true;
+  }
+
+  // ---------- main draw ----------
+  function draw(nowTs){
+    const W = canvas.width/(devicePixelRatio||1), H = canvas.height/(devicePixelRatio||1);
+    ctx.clearRect(0,0,W,H);
+    const cx=W/2, cy=H/2, R=Math.min(W,H)*.48;
+
+    drawBezel(cx,cy,R);
+    drawFace(cx,cy,R);
+    drawRedline(cx,cy,R);   // behind
+    drawTicks(cx,cy,R);     // on top
+
+    const now  = new Date();
+    const newMode = selectMode(now);
+
+    // mode transition handling
+    if (newMode !== modeName){
+      if (newMode === 'seconds'){
+        // rebase seconds tween
+        const tIdx = calibrate(baseIndexFor('seconds', now));
+        secTweenFrom = displayIdx; secTweenTo = tIdx; secTweenStart = nowTs; secTweenActive = true;
+        lastSecond = now.getSeconds();
+        entryTweenActive = false;
+      } else if (newMode === 'minutes'){
+        const to = calibrate(baseIndexFor('minutes', now));  // exact minute index
+        startEntryTween(to, 600); // smooth minute entry
+      } else if (newMode === 'hours'){
+        const to = calibrate(baseIndexFor('hours', now));     // exact hour index
+        startEntryTween(to, 800); // smooth hour entry
+      }
+      modeName = newMode;
+    }
+
+    const targetIdx = calibrate(baseIndexFor(modeName, now));
+
+    if (modeName === 'seconds'){
+      // tick + glide
+      const s = now.getSeconds();
+      if (s !== lastSecond){
+        lastSecond = s;
+        secTweenFrom = displayIdx; secTweenTo = targetIdx; secTweenStart = nowTs; secTweenActive = true;
+      }
+      if (secTweenActive){
+        const t = Math.min(1, (nowTs - secTweenStart)/secTweenDur);
+        displayIdx = secTweenFrom + (secTweenTo - secTweenFrom)*easeOutCubic(t);
+        if (t >= 1) secTweenActive = false;
+      } else {
+        displayIdx = targetIdx; // rest on the tick
+      }
+    } else {
+      // minutes/hours: smooth only as an entry tween, then hold exact
+      if (entryTweenActive){
+        const t = Math.min(1, (nowTs - entryStart)/entryDur);
+        displayIdx = entryFrom + (entryTo - entryFrom)*easeInOutCubic(t);
+        if (t >= 1) { entryTweenActive = false; displayIdx = targetIdx; }
+      } else {
+        displayIdx = targetIdx; // exact alignment
+      }
+    }
+
+    const angle= valToAngle(displayIdx, 0, 11);
+    drawNeedleTapered(cx,cy,R, angle, {
+      len:.88,       // longer reach
+      tail:.24,      // a bit more counterweight
+      base:.060,     // base half-width as fraction of R (thicker)
+      color:getCss('--needle'),
+      glow:getCss('--needle-glow')
+    });
+    drawHub(cx,cy,R);
+
+    requestAnimationFrame(draw);
+  }
+
+  // ---------- drawing primitives ----------
+  function drawBezel(cx,cy,R){
+    const outer=R, inner=R*CFG.bezelRatio;
+    const g=ctx.createRadialGradient(cx,cy,inner,cx,cy,outer);
+    g.addColorStop(0, '#11161e'); g.addColorStop(1, '#070a0f');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,outer,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=getCss('--ring-line'); ctx.lineWidth=Math.max(2,R*.02);
+    ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2); ctx.stroke();
+  }
+
+  function drawFace(cx,cy,R){
+    const r=R*(CFG.bezelRatio-.03);
+    const g=ctx.createLinearGradient(cx,cy-r,cx,cy+r);
+    g.addColorStop(0,getCss('--face-top')); g.addColorStop(1,getCss('--face-bot'));
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#1a2230'; ctx.lineWidth=Math.max(1,R*.01);
+    ctx.beginPath(); ctx.arc(cx,cy,r*.985,0,Math.PI*2); ctx.stroke();
+  }
+
+  function drawTicks(cx,cy,R){
+    const rOuter=R*(CFG.bezelRatio-.06);
+    const rMaj=rOuter - Math.max(16,R*.065);
+    const rMin=rOuter - Math.max(9, R*.036);
+    const labelInset = Math.max(26, R*.092);
+
+    // 0..11 major/minor (5 minors per major)
+    const steps=(CFG.ticksMajor-1)*5;
+    for(let i=0;i<=steps;i++){
+      const frac=i/steps;
+      const ang=deg2rad(CFG.startDeg + frac*(CFG.endDeg-CFG.startDeg));
+      const isMajor=(i%5===0);
+      ctx.strokeStyle=isMajor?getCss('--goji'):getCss('--goji-dim');
+      ctx.lineWidth=isMajor?3:1.6;
+      const ri=isMajor?rMaj:rMin;
+      const x1=cx+Math.cos(ang)*ri, y1=cy+Math.sin(ang)*ri;
+      const x2=cx+Math.cos(ang)*rOuter, y2=cy+Math.sin(ang)*rOuter;
+      ctx.beginPath(); ctx.moveTo(Math.round(x1)+.5,Math.round(y1)+.5);
+      ctx.lineTo(Math.round(x2)+.5,Math.round(y2)+.5); ctx.stroke();
+    }
+
+    // per-second ticks across 0..6 (60 ticks)
+    const secOuter = rOuter;
+    const secInner = rOuter - Math.max(6, R*.022);
+    for(let s=0;s<60;s++){           // 0..59 (avoid duplicate at 6)
+      const idx = (s/60)*6;          // 0..6 index
+      const ang = valToAngle(idx, 0, 11);
+      const x1=cx+Math.cos(ang)*secInner, y1=cy+Math.sin(ang)*secInner;
+      const x2=cx+Math.cos(ang)*secOuter, y2=cy+Math.sin(ang)*secOuter;
+      ctx.strokeStyle = (s%5===0) ? getCss('--goji') : getCss('--goji-dim');
+      ctx.lineWidth   = (s%5===0) ? 2 : 1.2;
+      ctx.beginPath(); ctx.moveTo(Math.round(x1)+.5,Math.round(y1)+.5);
+      ctx.lineTo(Math.round(x2)+.5,Math.round(y2)+.5); ctx.stroke();
+    }
+
+    // numerals 0..11
+    ctx.fillStyle=getCss('--goji');
+    ctx.font=`${Math.max(12,R*.070)}px "Press Start 2P", monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(let i=0;i<=11;i++){
+      const ang = valToAngle(i,0,11);
+      const rr = rMaj - labelInset;
+      ctx.fillText(String(i), cx+Math.cos(ang)*rr, cy+Math.sin(ang)*rr);
+    }
+  }
+
+  // redline: solid #6633cc, exactly 8–11, BEHIND ticks, square ends, aligned to tick tips
+  function drawRedline(cx,cy,R){
+    const rOuter=R*(CFG.bezelRatio-.06); // tick tips radius
+    const lw=Math.max(8,R*.035);
+    const r=rOuter - lw/2;               // center stroke so outer edge aligns with tips
+    const a0=valToAngle(CFG.redlineFrom,0,11);
+    const a1=valToAngle(CFG.redlineTo,  0,11);
+    ctx.strokeStyle=getCss('--redline');
+    ctx.lineWidth=lw; ctx.lineCap='butt';
+    ctx.beginPath(); ctx.arc(cx,cy,r,a0,a1); ctx.stroke();
+  }
+
+  // ---------- tapered red needle ----------
+  function drawNeedleTapered(cx,cy,R,ang,style){
+    const L = R*style.len;        // tip length from center
+    const T = R*style.tail;       // tail length behind center
+    const W = R*style.base;       // half-width at base (thickness)
+
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(ang);
+
+    // glow
+    if (style.glow){
+      ctx.fillStyle = style.glow;
+      ctx.beginPath();
+      ctx.moveTo(-T*0.9, -W*1.1);
+      ctx.lineTo(L, 0);
+      ctx.lineTo(-T*0.9,  W*1.1);
+      ctx.closePath();
+      ctx.filter = 'blur(1.2px)';
+      ctx.fill();
+      ctx.filter = 'none';
+    }
+
+    // main red needle (diamond/dart)
+    ctx.fillStyle = style.color;
+    ctx.beginPath();
+    // back point
+    ctx.moveTo(-T, 0);
+    // upper flank
+    ctx.lineTo(-T*0.18, -W);
+    // tip
+    ctx.lineTo(L, 0);
+    // lower flank
+    ctx.lineTo(-T*0.18,  W);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawHub(cx,cy,R){
+    // outer hub ring
+    ctx.fillStyle='#0f141c'; ctx.beginPath(); ctx.arc(cx,cy,R*.070,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#253246'; ctx.lineWidth=Math.max(2,R*.012);
+    ctx.beginPath(); ctx.arc(cx,cy,R*.070,0,Math.PI*2); ctx.stroke();
+
+    // inner cap (subtle light)
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*.042);
+    g.addColorStop(0,'#ffe3e6'); g.addColorStop(1,'#5a1e26');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R*.030,0,Math.PI*2); ctx.fill();
+  }
+
+  function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
