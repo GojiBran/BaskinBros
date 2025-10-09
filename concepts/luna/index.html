@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Luna — Phases & Libration Viewer (Goji)</title>
+<style>
+  :root{
+    --ink:#eaf2ff; --muted:#6980a6; --acc:#99cc33; --chip:#0e1420; --bg:#06080c; --panel:#0b1320;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:radial-gradient(1200px 800px at 60% -10%, #11192a 0%, #06080c 60%, #04060a 100%); color:var(--ink); font:13px/1.35 ui-sans-serif, system-ui, Segoe UI, Inter, Roboto, Arial;}
+  #wrap{position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr auto;}
+  header{
+    display:flex; gap:.75rem; align-items:center; padding:.6rem .8rem; background:linear-gradient(180deg,#0a1220,#090e19);
+    border-bottom:1px solid #0e1a2e; position:relative; z-index:2;
+  }
+  header .brand{font-weight:700; letter-spacing:.4px; color:#b9d5ff}
+  header .chip{background:var(--chip); border:1px solid #141f33; padding:.35rem .5rem; border-radius:.6rem; display:flex; gap:.5rem; align-items:center;}
+  header label{opacity:.9}
+  header input, header select{background:#0a1220;border:1px solid #152338;color:var(--ink);padding:.25rem .4rem;border-radius:.4rem}
+  header .btn{background:#0b1728;border:1px solid #1b2b46;color:#dce8ff;border-radius:.5rem;padding:.35rem .6rem;cursor:pointer}
+  header .btn:hover{border-color:#29456d}
+  #hud{
+    position:absolute; right:12px; top:66px; z-index:2; width:260px;
+    background:linear-gradient(180deg,#0a1220ee,#08101aed); border:1px solid #152338; border-radius:12px; padding:.75rem .8rem;
+    box-shadow:0 10px 30px rgba(0,0,0,.45); backdrop-filter: blur(6px);
+  }
+  #hud h3{margin:.2rem 0 .5rem 0; font-size:12px; color:#b8d2ff; letter-spacing:.5px; text-transform:uppercase}
+  #hud .row{display:flex; justify-content:space-between; gap:.5rem; padding:.22rem 0; color:#ccdaf8}
+  #hud .hint{margin-top:.35rem; color:#ffe6a3}
+  #hud .ok{color:#9ff0c7}
+  #hud .bad{color:#ff9d9d}
+  #canvasWrap{position:relative; overflow:hidden}
+  #labelRenderer{pointer-events:none}
+  #statusbar{
+    display:flex; gap:.75rem; align-items:center; padding:.5rem .75rem; background:#070b12; border-top:1px solid #0f1a2b; color:#a9c0e8;
+    font-size:12px;
+  }
+  #infoPanel{
+    position:absolute; left:12px; top:66px; z-index:2; width:320px;
+    background:linear-gradient(180deg,#0a1220ee,#08101aed); border:1px solid #152338; border-radius:12px; padding:.8rem .9rem; display:none;
+    max-height:60vh; overflow:auto; box-shadow:0 10px 30px rgba(0,0,0,.45); backdrop-filter: blur(6px);
+  }
+  #infoPanel h2{margin:.1rem 0 .35rem 0; font-size:16px}
+  #infoPanel p{margin:.35rem 0 .6rem 0; color:#c8d6f5}
+  #infoPanel .row{display:flex; gap:.5rem; flex-wrap:wrap; color:#b3c9f2}
+  #infoPanel .tag{background:#0b1728;border:1px solid #1b2b46;border-radius:999px;padding:.2rem .5rem}
+  #infoPanel .close{float:right}
+  .label{pointer-events:auto; background:#0a1220cc; border:1px solid #1c2d4b; padding:.15rem .35rem; border-radius:.4rem; color:#eaf2ff; font-weight:600}
+  .label:hover{border-color:#335a92}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <div class="brand">🌕 Luna — Phases & Libration</div>
+
+    <div class="chip">
+      <label>Time</label>
+      <input type="datetime-local" id="dt" step="1"/>
+      <button class="btn" id="btnNow" title="Jump to real now">Now</button>
+      <label style="margin-left:.4rem"><input type="checkbox" id="realtime"/> Real-time</label>
+    </div>
+
+    <div class="chip">
+      <label>Speed</label>
+      <input type="range" id="speed" min="0.001" max="20" step="0.001" value="1" style="width:140px"/>
+      <span id="speedVal">1×</span>
+    </div>
+
+    <div class="chip">
+      <label>Presets</label>
+      <select id="presets">
+        <option value="global">🌍 Global</option>
+        <option value="low">🛰️ Low Orbit</option>
+        <option value="earth">🌎 Earth View</option>
+        <option value="mars">🔭 Mars Telescope</option>
+      </select>
+      <button class="btn" id="btnGoPreset">Go</button>
+    </div>
+
+    <div class="chip">
+      <label>Sites</label>
+      <select id="sites" style="min-width:220px"></select>
+      <button class="btn" id="btnGoSite">Fly</button>
+    </div>
+
+    <div class="chip">
+      <label title="Invert drag direction (if rotation feels backwards)">
+        <input type="checkbox" id="invertDrag" checked/> Natural drag
+      </label>
+      <label><input type="checkbox" id="toggleLabels" checked/> Labels</label>
+    </div>
+  </header>
+
+  <div id="canvasWrap">
+    <div id="hud">
+      <h3>Moon State</h3>
+      <div class="row"><span>Phase:</span><span><b id="phasePct">…</b> (<span id="phaseAngle">…</span>)</span></div>
+      <div class="row"><span>Illum Dir:</span><span id="illumDir">…</span></div>
+      <div class="row"><span>Libration Lon:</span><span id="libLon">…</span></div>
+      <div class="row"><span>Libration Lat:</span><span id="libLat">…</span></div>
+      <div class="row"><span>Diurnal:</span><span id="libDiurnal">…</span></div>
+      <div class="hint" id="eclipseHint">Eclipse window: …</div>
+    </div>
+
+    <div id="infoPanel">
+      <button class="btn close" id="infoClose">✕</button>
+      <h2 id="infoTitle">Site</h2>
+      <div class="row"><div class="tag" id="infoType">—</div><div class="tag" id="infoCoords">—</div></div>
+      <p id="infoDesc">—</p>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div>Cursor: <b id="cursorLL">—</b></div>
+    <div>| Target: <b id="targetName">—</b></div>
+    <div>| Cam: <b id="camKm">—</b> km</div>
+    <div>| FPS: <b id="fps">—</b></div>
+  </div>
+</div>
+
+<script type="module">
+/* --- Modules --- */
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'https://unpkg.com/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js';
+import * as Astronomy from 'https://unpkg.com/astronomy-engine@2.2.0/esm/astronomy.js';
+
+/* --- Config --- */
+const KM = 1000;
+const MOON_RADIUS_KM = 1737.4;
+const MOON_R = MOON_RADIUS_KM * KM;   // meters in scene units
+const SKY_R = MOON_R * 250;          // stars sphere
+const SUN_DIST = MOON_R * 200;       // where we draw the sun sprite
+
+// 👉 Swap this with your hi-res diffuse:
+// - NASA CGI Moon Kit: 8K/16K TIF (convert to PNG/JPG) (see links below).
+// - SolarSystemScope 8K JPG works out of the box.
+const MOON_DIFFUSE_URL = 'https://upload.wikimedia.org/wikipedia/commons/9/99/Solarsystemscope_texture_8k_moon.jpg'; // 8192×4096 JPG
+
+/* --- DOM --- */
+const wrap = document.getElementById('canvasWrap');
+const hud = {
+  phasePct: document.getElementById('phasePct'),
+  phaseAngle: document.getElementById('phaseAngle'),
+  illumDir: document.getElementById('illumDir'),
+  libLon: document.getElementById('libLon'),
+  libLat: document.getElementById('libLat'),
+  libDiurnal: document.getElementById('libDiurnal'),
+  eclipseHint: document.getElementById('eclipseHint'),
+};
+const cursorLL = document.getElementById('cursorLL');
+const camKm = document.getElementById('camKm');
+const fpsEl = document.getElementById('fps');
+const targetName = document.getElementById('targetName');
+
+/* --- Scene --- */
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setSize(window.innerWidth, window.innerHeight - 100);
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+wrap.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(window.innerWidth, window.innerHeight - 100);
+labelRenderer.domElement.id = 'labelRenderer';
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.inset = '0';
+wrap.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+
+// Camera & controls (Earth/Google-style)
+const camera = new THREE.PerspectiveCamera(55, renderer.domElement.clientWidth/renderer.domElement.clientHeight, 1, SKY_R*5);
+camera.position.set(0, 0, MOON_R * 5);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0,0,0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.rotateSpeed = -0.3;             // natural L/R drag feel (invert with checkbox)
+controls.zoomSpeed = 0.9;
+controls.panSpeed = 0.5;
+controls.screenSpacePanning = true;
+controls.minDistance = MOON_R * 1.05;
+controls.maxDistance = MOON_R * 30;
+
+// Resize
+addEventListener('resize', ()=>{
+  const h = window.innerHeight - 100;
+  renderer.setSize(window.innerWidth, h);
+  labelRenderer.setSize(window.innerWidth, h);
+  camera.aspect = renderer.domElement.clientWidth/renderer.domElement.clientHeight;
+  camera.updateProjectionMatrix();
+});
+
+/* --- Sky: star field --- */
+{
+  const stars = new THREE.BufferGeometry();
+  const N = 5000;
+  const positions = new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const u = Math.random(), v = Math.random();
+    const theta = 2*Math.PI*u, phi = Math.acos(2*v-1);
+    const r = SKY_R*(0.9+0.1*Math.random());
+    positions[3*i+0] = r*Math.sin(phi)*Math.cos(theta);
+    positions[3*i+1] = r*Math.cos(phi);
+    positions[3*i+2] = r*Math.sin(phi)*Math.sin(theta);
+  }
+  stars.setAttribute('position', new THREE.BufferAttribute(positions,3));
+  const pts = new THREE.Points(stars, new THREE.PointsMaterial({size: MOON_R*0.00002, sizeAttenuation:true, depthWrite:false}));
+  scene.add(pts);
+}
+
+/* --- Lights & Sun sprite --- */
+const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+scene.add(sunLight);
+scene.add(new THREE.AmbientLight(0x1b2a46, 0.35));
+
+const sunSprite = makeSunSprite();
+scene.add(sunSprite);
+
+function makeSunSprite(){
+  // radial gradient sprite (canvas to texture)
+  const size = 256;
+  const cvs = document.createElement('canvas'); cvs.width = cvs.height = size;
+  const ctx = cvs.getContext('2d');
+  const g = ctx.createRadialGradient(size/2, size/2, 4, size/2, size/2, size/2);
+  g.addColorStop(0,'rgba(255,255,220,1)');
+  g.addColorStop(0.3,'rgba(255,240,180,.9)');
+  g.addColorStop(0.6,'rgba(255,190,80,.35)');
+  g.addColorStop(1,'rgba(255,160,40,0)');
+  ctx.fillStyle = g; ctx.fillRect(0,0,size,size);
+  const tex = new THREE.CanvasTexture(cvs);
+  const mat = new THREE.SpriteMaterial({map:tex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending});
+  const spr = new THREE.Sprite(mat);
+  spr.scale.setScalar(MOON_R*0.8);
+  return spr;
+}
+
+/* --- Moon mesh --- */
+const moonGroup = new THREE.Group();   // holds moon + labels so we can rotate for libration/rotation if desired
+scene.add(moonGroup);
+
+const loader = new THREE.TextureLoader();
+const diffuse = loader.load(MOON_DIFFUSE_URL, ()=>{ diffuse.colorSpace = THREE.SRGBColorSpace; diffuse.anisotropy = 8; diffuse.wrapS = diffuse.wrapT = THREE.RepeatWrapping; });
+
+const moon = new THREE.Mesh(
+  new THREE.SphereGeometry(MOON_R, 256, 128),
+  new THREE.MeshStandardMaterial({
+    map: diffuse,
+    roughness: 1.0,
+    metalness: 0.0
+    // bumpMap: bumpTex, bumpScale: 3e3, // optional if you convert LOLA height to bump
+  })
+);
+moon.name = 'Moon';
+moonGroup.add(moon);
+
+/* --- Raycasting for picking --- */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+/* --- Sites data (subset; add more easily) --- */
+const SITES = [
+  // Apollo
+  site('Apollo 11', 0.67409, 23.47298, 'Apollo', 'Mare Tranquillitatis — first human landing (Armstrong/Aldrin).'),
+  site('Apollo 12', -3.01381, -23.41930, 'Apollo', 'Oceanus Procellarum — pinpoint landing near Surveyor 3.'),
+  site('Apollo 14', -3.64544, -17.47136, 'Apollo', 'Fra Mauro formation.'),
+  site('Apollo 15', 26.10083, 3.65139, 'Apollo', 'Hadley–Apennine; first Lunar Roving Vehicle.'),
+  site('Apollo 16', -8.9734, 15.5010, 'Apollo', 'Descartes Highlands.'),
+  site('Apollo 17', 20.1653, 30.7658, 'Apollo', 'Taurus–Littrow; last Apollo landing.'),
+
+  // Surveyor
+  site('Surveyor 1', -2.46, -43.32, 'Surveyor', 'First US soft landing (Oceanus Procellarum).'),
+  site('Surveyor 5', 1.41, 23.18, 'Surveyor', 'Basaltic Mare Tranquillitatis chemistry.'),
+  site('Surveyor 6', 0.49, -1.40, 'Surveyor', 'Sinus Medii; hop maneuver success.'),
+
+  // Luna (USSR)
+  site('Luna 16', -0.68, 56.30, 'Luna', 'First Soviet sample return (Mare Fecunditatis).'),
+  site('Luna 24', 12.75, 62.20, 'Luna', 'Sample return in Mare Crisium.'),
+
+  // Chang’e (CNSA)
+  site('Chang’e 3', 44.1215, -19.512, 'Chang’e', 'Yutu rover, Mare Imbrium.'),
+  site('Chang’e 4', -45.4446, 177.5991, 'Chang’e', 'First farside landing (Von Kármán).'),
+  site('Chang’e 5', 43.0585, -51.916, 'Chang’e', 'Recent sample return (Mons Rümker region).'),
+  site('Chang’e 6', -41.6385, 206.0148, 'Chang’e', 'Farside sample return (Antarctica Basin region).'),
+
+  // Classic features
+  site('Tycho', -43.31, -11.36, 'Feature', 'Young, bright-rayed crater (85 km).'),
+  site('Copernicus', 9.62, -20.08, 'Feature', 'Prominent rayed crater (93 km).'),
+  site('Mare Tranquillitatis (center)', 8.5, 31.4, 'Feature', 'Sea of Tranquility.'),
+  site('Mare Imbrium (center)', 32.8, -15.6, 'Feature', 'Sea of Showers.'),
+];
+
+function site(name, lat, lonE, type, desc){
+  return { id: name.toLowerCase().replace(/\s+/g,'-'), name, lat, lonE, type, desc };
+}
+
+/* --- Labels & pick helpers --- */
+const labelsGroup = new THREE.Group();
+moonGroup.add(labelsGroup);
+const pickables = []; // small spheres for raycast
+
+function addLabelForSite(s){
+  const el = document.createElement('div');
+  el.className = 'label'; el.textContent = s.name;
+  const l = new CSS2DObject(el);
+  const p = llToVec3(s.lat, s.lonE, MOON_R*1.001);
+  l.position.copy(p);
+  labelsGroup.add(l);
+
+  // small pick sphere
+  const pick = new THREE.Mesh(new THREE.SphereGeometry(MOON_R*0.01, 8, 8), new THREE.MeshBasicMaterial({transparent:true, opacity:0}));
+  pick.position.copy(p);
+  pick.userData.site = s;
+  pickables.push(pick);
+  moonGroup.add(pick);
+}
+SITES.forEach(addLabelForSite);
+
+/* --- Build sites dropdown with groups --- */
+{
+  const sel = document.getElementById('sites');
+  const groups = ['Apollo','Surveyor','Luna','Chang’e','Feature'];
+  const byGroup = Object.fromEntries(groups.map(g=>[g,[]]));
+  SITES.forEach(s=>byGroup[s.type].push(s));
+  groups.forEach(g=>{
+    const og = document.createElement('optgroup'); og.label = g;
+    byGroup[g].forEach(s=>{
+      const opt = document.createElement('option'); opt.value = s.id; opt.textContent = s.name;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+}
+
+/* --- Info panel --- */
+const info = {
+  panel: document.getElementById('infoPanel'),
+  title: document.getElementById('infoTitle'),
+  type: document.getElementById('infoType'),
+  coords: document.getElementById('infoCoords'),
+  desc: document.getElementById('infoDesc'),
+  close: document.getElementById('infoClose'),
+};
+info.close.onclick = ()=> info.panel.style.display='none';
+
+function showInfo(s){
+  info.title.textContent = s.name;
+  info.type.textContent = s.type;
+  info.coords.textContent = `${formatLat(s.lat)}, ${formatLon(s.lonE)}`;
+  info.desc.textContent = s.desc;
+  info.panel.style.display = 'block';
+}
+
+/* --- Ephemeris helpers (Astronomy Engine) --- */
+function astroTime(date) { return new Astronomy.AstroTime(date); }
+
+function earthTo(body, date){ // geocentric vector Earth -> body (AU)
+  return Astronomy.GeoVector(Astronomy.Body[body], date, /*aberration*/true);
+}
+function sunDirFromMoon(date){ // vector Moon -> Sun (AU), then normalized
+  // Moon(helio) ≈ Earth(helio) + Earth->Moon(geo)
+  const ve = Astronomy.HelioVector(Astronomy.Body.Earth, date);
+  const vm = earthTo('Moon', date); // Earth->Moon
+  const vs = Astronomy.HelioVector(Astronomy.Body.Sun, date); // should be {0,0,0}, but keep API symmetric
+  // Moon->Sun = Sun(helio) - Moon(helio)
+  const mx = ve.x + vm.x, my = ve.y + vm.y, mz = ve.z + vm.z;
+  const sx = vs.x - mx, sy = vs.y - my, sz = vs.z - mz;
+  const len = Math.hypot(sx,sy,sz);
+  return new THREE.Vector3(sx/len, sy/len, sz/len);
+}
+function earthViewDir(date){ // direction from Moon toward Earth
+  const vm = earthTo('Moon', date);
+  const v = new THREE.Vector3(-vm.x, -vm.y, -vm.z); // Moon->Earth = -(Earth->Moon)
+  v.normalize(); return v;
+}
+function marsViewDir(date){ // direction from Moon toward Mars
+  const ve = Astronomy.HelioVector(Astronomy.Body.Earth, date);
+  const vm = earthTo('Moon', date);
+  const vmoonHelio = new THREE.Vector3(ve.x+vm.x, ve.y+vm.y, ve.z+vm.z);
+  const vmar = Astronomy.HelioVector(Astronomy.Body.Mars, date);
+  const dir = new THREE.Vector3(vmar.x - vmoonHelio.x, vmar.y - vmoonHelio.y, vmar.z - vmoonHelio.z).normalize();
+  return dir;
+}
+function illumInfo(date){
+  const il = Astronomy.Illumination(Astronomy.Body.Moon, date);
+  return { fraction: il.phase_fraction, angleDeg: il.phase_angle, geoDistAU: il.geo_dist };
+}
+function eclipticLatMoon(date){
+  const vm = earthTo('Moon', date);
+  const ec = Astronomy.Ecliptic(vm);
+  return ec.elat; // degrees
+}
+
+/* --- Time flow --- */
+const dt = document.getElementById('dt');
+const btnNow = document.getElementById('btnNow');
+const realtime = document.getElementById('realtime');
+const speed = document.getElementById('speed');
+const speedVal = document.getElementById('speedVal');
+
+function setNow(){ const now = new Date(); dt.value = toLocalDatetime(now); }
+btnNow.onclick = ()=>{ setNow(); lastSim = new Date(dt.value); };
+function toLocalDatetime(d){
+  const pad = n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+setNow();
+let lastSim = new Date(dt.value);
+let lastReal = performance.now();
+
+realtime.onchange = ()=> { if(realtime.checked) setNow(); };
+speed.oninput = ()=> { speedVal.textContent = `${(+speed.value).toFixed(3)}×`; };
+
+/* --- Controls UX toggles --- */
+document.getElementById('invertDrag').onchange = (e)=> {
+  controls.rotateSpeed = e.target.checked ? -0.3 : 0.3;
+};
+document.getElementById('toggleLabels').onchange = (e)=>{
+  labelsGroup.visible = e.target.checked;
+};
+
+/* --- Presets --- */
+document.getElementById('btnGoPreset').onclick = ()=>{
+  const which = document.getElementById('presets').value;
+  goPreset(which);
+};
+function goPreset(which){
+  const t = new Date(dt.value);
+  if(which==='global'){
+    smoothCameraTo( earthViewDir(t).multiplyScalar(MOON_R*10), new THREE.Vector3(0,0,0) );
+  } else if(which==='low'){
+    // look near Copernicus from low orbit
+    const cp = SITES.find(s=>s.name==='Copernicus');
+    flyToSite(cp, /*orbitAltKm*/120);
+  } else if(which==='earth'){
+    const dir = earthViewDir(t);
+    smoothCameraTo( dir.clone().multiplyScalar(MOON_R*8), new THREE.Vector3(0,0,0) );
+  } else if(which==='mars'){
+    const dir = marsViewDir(t);
+    smoothCameraTo( dir.clone().multiplyScalar(MOON_R*8), new THREE.Vector3(0,0,0) );
+  }
+}
+
+/* --- Jump to site --- */
+document.getElementById('btnGoSite').onclick = ()=>{
+  const id = document.getElementById('sites').value;
+  const s = SITES.find(x=>x.id===id);
+  if(s) flyToSite(s);
+};
+
+function flyToSite(s, orbitAltKm=300){
+  targetName.textContent = s.name;
+  showInfo(s);
+  const pSurf = llToVec3(s.lat, s.lonE, MOON_R);
+  const outward = pSurf.clone().normalize();
+  const eye = outward.clone().multiplyScalar(MOON_R + orbitAltKm*KM);
+  smoothCameraTo(eye, pSurf);
+}
+
+/* --- Camera tween --- */
+let tweening = 0;
+function smoothCameraTo(pos, lookAt){
+  tweening = 1;
+  const startPos = camera.position.clone();
+  const startTar = controls.target.clone();
+  const endPos = pos.clone();
+  const endTar = lookAt.clone();
+  const T = 900; // ms
+  const t0 = performance.now();
+  (function step(){
+    const t = performance.now()-t0;
+    const u = Math.min(1, t/T);
+    const s = easeInOutCubic(u);
+    camera.position.lerpVectors(startPos, endPos, s);
+    controls.target.lerpVectors(startTar, endTar, s);
+    if(u<1) requestAnimationFrame(step); else tweening = 0;
+  })();
+}
+function easeInOutCubic(x){ return x<.5 ? 4*x*x*x : 1 - Math.pow(-2*x+2,3)/2; }
+
+/* --- Mouse interactions: dbl-click zoom, lat/lon readout, label click --- */
+renderer.domElement.addEventListener('dblclick', (e)=>{
+  const p = getMoonHit(e);
+  if(p){ // zoom toward the hit point
+    const dir = p.clone().sub(camera.position).normalize();
+    const dist = camera.position.distanceTo(p);
+    const newPos = camera.position.clone().add(dir.multiplyScalar(dist*0.5));
+    smoothCameraTo(newPos, p);
+  }
+});
+renderer.domElement.addEventListener('mousemove', (e)=>{
+  const p = getMoonHit(e);
+  if(p){
+    // into Moon-local coords to get selenographic LL
+    const local = moon.worldToLocal(p.clone());
+    const {lat, lonE} = vec3ToLL(local);
+    cursorLL.textContent = `${formatLat(lat)}, ${formatLon(lonE)}`;
+  } else {
+    cursorLL.textContent = '—';
+  }
+});
+renderer.domElement.addEventListener('click', (e)=>{
+  // click a label proxy sphere to fly
+  raycaster.setFromCamera(normalizeMouse(e), camera);
+  const hit = raycaster.intersectObjects(pickables, false)[0];
+  if(hit && hit.object.userData.site){
+    flyToSite(hit.object.userData.site, 220);
+  }
+});
+
+/* --- Ray helpers --- */
+function normalizeMouse(e){
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  return new THREE.Vector2(x,y);
+}
+function getMoonHit(e){
+  raycaster.setFromCamera(normalizeMouse(e), camera);
+  const hit = raycaster.intersectObject(moon, false)[0];
+  return hit ? hit.point : null;
+}
+
+/* --- LL<->XYZ --- */
+function llToVec3(latDeg, lonEDeg, r){
+  const lat = THREE.MathUtils.degToRad(latDeg);
+  const lon = THREE.MathUtils.degToRad(lonEDeg);
+  // Selenographic: +X = lon=0, +Z = lon=90E, Y up
+  const x = r * Math.cos(lat) * Math.cos(lon);
+  const y = r * Math.sin(lat);
+  const z = r * Math.cos(lat) * Math.sin(lon);
+  return new THREE.Vector3(x,y,z);
+}
+function vec3ToLL(v){
+  const r = Math.hypot(v.x, v.y, v.z);
+  const lat = Math.asin( v.y / r );
+  const lon = Math.atan2( v.z, v.x );
+  return { lat: THREE.MathUtils.radToDeg(lat), lonE: THREE.MathUtils.radToDeg(lon) };
+}
+function formatLat(lat){ return `${Math.abs(lat).toFixed(3)}° ${lat>=0?'N':'S'}`; }
+function formatLon(lonE){
+  const E = ((lonE%360)+360)%360;
+  const W = (E>180) ? 360-E : null;
+  return (W===null) ? `${E.toFixed(3)}° E` : `${W.toFixed(3)}° W`;
+}
+
+/* --- Libration (placeholder but wired) --- */
+function computeLibration(date, observerLatDeg=0){ 
+  // NOTE: This returns an *approximate* optical+diurnal libration stub, for display only.
+  // It is deliberately structured so you can drop in a precise model later (Meeus Ch. 53 or JPL/ELP).
+  // We modulate within realistic envelopes: |lon|≲7.9°, |lat|≲6.7°, diurnal≲1.0°.
+  const t = date instanceof Date ? date : new Date(date);
+  const d = (t - new Date('2000-01-01T12:00:00Z')) / 86400000; // days since J2000
+  const M = 2*Math.PI*(d/27.55455);   // Moon anomaly-ish
+  const F = 2*Math.PI*(d/27.21222);   // argument of latitude-ish
+  const lon = 7.9*Math.sin(M) + 2.0*Math.sin(2*M);       // deg (rough envelope)
+  const lat = 6.7*Math.sin(F) + 1.3*Math.sin(2*F+0.3);   // deg
+  // Diurnal ~ 1° amplitude, depends on hour angle; approximate by local solar time for feedback.
+  const hrs = t.getUTCHours() + t.getUTCMinutes()/60;
+  const diurnal = Math.cos(THREE.MathUtils.degToRad(observerLatDeg)) * Math.sin(hrs/24*2*Math.PI) * 1.0; // deg
+  return { lon, lat, diurnal };
+}
+
+/* --- Eclipse hint --- */
+function updateEclipseHint(date){
+  const phase = illumInfo(date);
+  const beta = eclipticLatMoon(date); // deg
+  let txt = 'No';
+  if(phase.fraction < 0.03){ // near New
+    txt = (Math.abs(beta) < 1.0) ? '🌑 Possible (near node)' : 'new moon but off the node';
+  } else if(phase.fraction > 0.97){ // near Full
+    txt = (Math.abs(beta) < 1.0) ? '🌕 Possible (near node)' : 'full moon but off the node';
+  }
+  hud.eclipseHint.textContent = `Eclipse window: ${txt} (β=${beta.toFixed(2)}°)`;
+}
+
+/* --- Main update loop --- */
+let fpsT = performance.now(), fpsCount = 0;
+function tick(){
+  requestAnimationFrame(tick);
+
+  // Sim clock
+  const now = performance.now();
+  const dtReal = now - lastReal; lastReal = now;
+  let sim = new Date(dt.value);
+  if(realtime.checked){
+    sim = new Date(sim.getTime() + dtReal);
+    dt.value = toLocalDatetime(sim);
+  } else {
+    const speedup = parseFloat(speed.value); // 1× = realtime
+    sim = new Date(sim.getTime() + dtReal*speedup);
+    dt.value = toLocalDatetime(sim);
+  }
+  lastSim = sim;
+
+  // Sun/Moon/Earth geometry
+  const sunDir = sunDirFromMoon(astroTime(sim));         // unit vector Moon->Sun (AU)
+  const sunWorld = sunDir.clone().multiplyScalar(SUN_DIST);
+  sunLight.position.copy(sunWorld);
+  sunSprite.position.copy(sunWorld);
+
+  // HUD phase & angles
+  const ph = illumInfo(astroTime(sim));
+  hud.phasePct.textContent = `${(ph.fraction*100).toFixed(1)}%`;
+  hud.phaseAngle.textContent = `${ph.angleDeg.toFixed(2)}°`;
+
+  // Libration readout (hook)
+  const lib = computeLibration(sim, /*observerLat*/0);
+  hud.libLon.textContent = `${lib.lon.toFixed(2)}°`;
+  hud.libLat.textContent = `${lib.lat.toFixed(2)}°`;
+  hud.libDiurnal.textContent = `${lib.diurnal.toFixed(2)}°`;
+
+  // Eclipse hint
+  updateEclipseHint(astroTime(sim));
+
+  // Controls
+  controls.update();
+
+  // UI smalls
+  camKm.textContent = (camera.position.length()/KM).toFixed(0);
+  const dir = earthViewDir(astroTime(sim));
+  hud.illumDir.textContent = `RA/N/A (vector len 1)`;
+  if((++fpsCount)>=30){
+    const t = now - fpsT;
+    const fps = (fpsCount*1000)/t;
+    fpsEl.textContent = fps.toFixed(0);
+    fpsCount=0; fpsT=now;
+  }
+
+  // Render
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+tick();
+
+/* --- Utility: set “Now” button to true now each click --- */
+document.getElementById('dt').addEventListener('change', ()=>{ lastSim = new Date(dt.value); });
+
+/* --- Double-check label visibility with camera distance (optional culling) --- */
+// (Keep always visible for now to match your "stay loaded" requirement)
+
+/* --- Helpers end --- */
+</script>
+</body>
+</html>

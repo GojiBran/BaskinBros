@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Synthwave Jet Lab — Turbocharger Fun</title>
+
+<!-- Library: Chart.js for graphs -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4"></script>
+
+<style>
+  :root{
+    --bg:#0b0f12; --panel:#0f151c; --ink:#eaf2ff; --muted:#1a2533;
+    --acc:#99cc33; --cool:#7ad1ff; --hot:#ff6b6b; --amber:#ffb347;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--ink);
+    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+    background:
+      radial-gradient(1100px 800px at 75% -10%, #132233 0%, #0a1017 60%, #070a0f 100%),
+      linear-gradient(135deg,#0c1218 0%, #090d13 100%);
+    display:grid; grid-template-rows:auto 1fr; overflow:hidden;
+  }
+  header{
+    display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
+    padding:.6rem .8rem; border-bottom:1px solid #162130;
+    background:linear-gradient(180deg,#101821,#0b1016); position:sticky; top:0; z-index:5;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  h1{margin:0; font-size:16px; letter-spacing:.08em; color:#dff7d1; display:flex; align-items:center; gap:.6rem}
+  .lamp{width:10px; height:10px; border-radius:50%; background:var(--acc); box-shadow:0 0 14px var(--acc)}
+  .controls{display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; justify-content:flex-end}
+  .ctrl{display:flex; align-items:center; gap:.5rem; background:var(--panel); padding:.4rem .55rem; border:1px solid var(--muted); border-radius:12px; white-space:nowrap}
+  .ctrl label{font-size:11px; opacity:.9; letter-spacing:.06em}
+  .ctrl input[type="range"]{width:140px}
+  .btn{
+    appearance:none; border:1px solid var(--acc); background:linear-gradient(180deg,#172116,#0f160f); color:#e8ffd8;
+    padding:.45rem .8rem; border-radius:12px; letter-spacing:.06em; cursor:pointer;
+    box-shadow:0 0 12px rgba(153,204,51,.25) inset,0 8px 20px rgba(0,0,0,.35);
+    transition:transform .08s ease, box-shadow .2s ease;
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .toggle{cursor:pointer; user-select:none}
+  main{
+    height:calc(100vh - 62px);
+    display:grid; grid-template-columns: minmax(560px,1.4fr) minmax(360px,1fr);
+    gap:12px; padding:12px;
+  }
+  .pane{border:1px solid #1a2636; border-radius:16px; background:linear-gradient(180deg,#0b1016,#0a0e13); box-shadow:0 16px 48px rgba(0,0,0,.35) inset; overflow:hidden}
+  .left{display:grid; grid-template-rows: minmax(340px, 48vh) auto auto; gap:12px; padding:12px}
+  .card{border:1px solid #1b2737; border-radius:12px; background:#0c1218}
+  .hero{display:grid; grid-template-columns:1.2fr 1fr; gap:12px}
+  .canvasWrap{display:flex; align-items:center; justify-content:center; min-height:240px}
+  .canvasWrap canvas{width:100%; height:100%}
+  .right{display:grid; grid-template-rows:auto 1fr; gap:10px; padding:10px}
+  .gGrid{display:grid; grid-template-columns:repeat(2, minmax(240px, 1fr)); gap:10px; overflow:auto}
+  .gauge{border:1px solid #1b2737; border-radius:12px; background:#0c1218; padding:10px; display:flex; flex-direction:column; gap:6px}
+  .gauge .title{font-size:12px; color:#cfe4ff; letter-spacing:.04em; text-align:center}
+  .legend{display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 10px}
+  .pill{font-size:11px; padding:.25rem .5rem; border:1px solid #233449; border-radius:999px; text-align:center; opacity:.35}
+  .pill.on{opacity:1}
+  .charts{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .chartBox{display:flex; flex-direction:column; min-height:220px; padding:10px}
+  .chartBox canvas{flex:1; width:100%; height:100%}
+  .barwrap{display:flex; align-items:center; gap:10px}
+  .bar{flex:1; height:14px; border:1px solid #233449; border-radius:999px; background:#0f151c; overflow:hidden}
+  .fill{height:100%; width:0%; background:linear-gradient(90deg,#7ad1ff,#99cc33,#ff6b6b)}
+  @media (max-width: 1100px){ main{grid-template-columns:1fr} .hero{grid-template-columns:1fr} .charts{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="lamp"></span> Synthwave Jet Lab — Turbocharger Fun</h1>
+  <div class="controls">
+    <button class="btn" id="btnStart">Start</button>
+    <div class="ctrl"><label>Throttle</label><input id="slThrottle" type="range" min="0" max="1" step="0.01" value="0.25"><span id="vThrottle">25%</span></div>
+    <div class="ctrl"><label>Nozzle</label><input id="slNoz" type="range" min="0.6" max="1.3" step="0.01" value="1.0"><span id="vNoz">1.00×</span></div>
+    <div class="ctrl toggle" id="tAB">Afterburner</div>
+    <div class="ctrl"><label>Limiter</label><input id="chkLimiter" type="checkbox" checked> <span style="font-size:11px;opacity:.75">safe 170k</span></div>
+    <div class="ctrl">
+      <label>Preset</label>
+      <select id="selPreset">
+        <option value="small">Small</option>
+        <option value="medium" selected>Medium</option>
+        <option value="large">Large</option>
+      </select>
+    </div>
+    <button class="btn" id="btnSpool">Spool</button>
+    <button class="btn" id="btnDyno">Dyno</button>
+    <button class="btn" id="btnChaos">Chaos</button>
+    <button class="btn" id="btnEStop">E-Stop</button>
+    <div class="ctrl toggle" id="tAudio">🔇 Audio</div>
+  </div>
+</header>
+
+<main>
+  <section class="pane left">
+    <div class="hero">
+      <!-- BIG donut tach -->
+      <div class="card canvasWrap"><canvas id="donut"></canvas></div>
+      <!-- Exhaust lane + health -->
+      <div class="card" style="display:grid; grid-template-rows:auto 1fr auto; gap:8px; padding:10px">
+        <div style="font-size:12px; opacity:.85">Exhaust Lane</div>
+        <div class="canvasWrap" style="min-height:220px"><canvas id="lane"></canvas></div>
+        <div class="barwrap">
+          <div class="mini" style="font-size:12px;opacity:.85;width:80px">Health</div>
+          <div class="bar"><div id="healthBar" class="fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Library graphs -->
+    <div class="charts">
+      <div class="card chartBox">
+        <div style="font-size:12px; opacity:.85; margin-bottom:6px">RPM×1000 & Thrust (N)</div>
+        <canvas id="chartA"></canvas>
+      </div>
+      <div class="card chartBox">
+        <div style="font-size:12px; opacity:.85; margin-bottom:6px">EGT (°C) & Fuel (g/s)</div>
+        <canvas id="chartB"></canvas>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="legend card">
+      <div id="pIgn"  class="pill">Ignition</div>
+      <div id="pSmoke" class="pill">Smoke</div>
+      <div id="pFlame" class="pill">Flame</div>
+      <div id="pAB"    class="pill">Afterburner</div>
+      <div id="pOver"  class="pill">Overspeed</div>
+      <div style="margin-left:auto;font-size:11px;opacity:.85">Keys: <b>Space</b> start/pause · <b>↑/↓</b> throttle · <b>S</b> spool · <b>D</b> dyno · <b>X</b> stop · <b>A</b> afterburner</div>
+    </div>
+  </section>
+
+  <!-- Gauges -->
+  <section class="pane right">
+    <div style="padding:8px 10px; font-size:11px; opacity:.85">Gauges (auto-rescaling ranges)</div>
+    <div class="gGrid">
+      <div class="gauge"><div class="title">Turbo RPM</div><canvas id="gRpm"></canvas></div>
+      <div class="gauge"><div class="title">EGT</div><canvas id="gEgt"></canvas></div>
+      <div class="gauge"><div class="title">Thrust</div><canvas id="gThrust"></canvas></div>
+      <div class="gauge"><div class="title">Fuel</div><canvas id="gFuel"></canvas></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  /* ====================== Utilities ====================== */
+  const byId = id=>document.getElementById(id);
+  function fitHiDPI(canvas){
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    canvas.width  = Math.max(50, Math.round(rect.width  * dpr));
+    canvas.height = Math.max(50, Math.round(rect.height * dpr));
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return ctx;
+  }
+  function watchCanvas(cv, draw){
+    const ro = new ResizeObserver(()=>{ const ctx=fitHiDPI(cv); draw(ctx,true); });
+    ro.observe(cv);
+    return ()=>fitHiDPI(cv);
+  }
+  const clamp=(v,a,b)=>Math.max(a, Math.min(b, v));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const smooth=(v, target, rate, dt)=> v + (target-v)*(1 - Math.exp(-rate*dt));
+  function pill(el,on){ el.classList.toggle('on', !!on); }
+
+  /* ====================== Donut Tach (hero) ====================== */
+  const donut = byId('donut'); let dctx = fitHiDPI(donut);
+  watchCanvas(donut, (ctx)=>{ dctx=ctx; drawDonut(0,0,0,false); });
+
+  function drawDonut(rpmK, egt, thrust, ab){
+    const rect = donut.getBoundingClientRect(), w=rect.width, h=rect.height;
+    const cx=w*0.5, cy=h*0.56, R=Math.min(w,h)*0.34;
+    const ctx=dctx; ctx.clearRect(0,0,w,h);
+
+    // subtle starfield
+    for(let i=0;i<40;i++){
+      const x=(i*97 % w), y=(Math.sin((performance.now()/1000+i)*0.7)*0.5+0.5)*h;
+      ctx.fillStyle='rgba(140,180,255,0.06)'; ctx.fillRect(x,y,1.5,1.5);
+    }
+
+    // base ring
+    ctx.lineWidth=24; ctx.strokeStyle='#142131';
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+
+    // RPM arc
+    const frac = clamp(rpmK/240, 0, 1);
+    const a0 = -Math.PI*0.75, a1 = a0 + frac * Math.PI*1.5;
+    const grad = ctx.createConicGradient(a0, cx, cy);
+    grad.addColorStop(0,'#7ad1ff'); grad.addColorStop(.6,'#99cc33'); grad.addColorStop(1,'#ff6b6b');
+    ctx.strokeStyle = grad; ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(cx,cy,R, a0, a1, false); ctx.stroke();
+
+    // glow
+    ctx.shadowColor='rgba(150,220,255,.25)'; ctx.shadowBlur=20; ctx.lineWidth=6;
+    ctx.beginPath(); ctx.arc(cx,cy,R+20, a0, a1, false); ctx.stroke();
+    ctx.shadowBlur=0;
+
+    // ticks
+    ctx.strokeStyle='#274057'; ctx.lineWidth=2;
+    for(let i=0;i<=6;i++){
+      const ang = a0 + i*(Math.PI*1.5/6);
+      ctx.beginPath();
+      ctx.moveTo(cx+(R-12)*Math.cos(ang), cy+(R-12)*Math.sin(ang));
+      ctx.lineTo(cx+(R-28)*Math.cos(ang), cy+(R-28)*Math.sin(ang));
+      ctx.stroke();
+      ctx.fillStyle='#9fb4d0'; ctx.font='11px system-ui';
+      const tx=cx+(R-42)*Math.cos(ang), ty=cy+(R-42)*Math.sin(ang)+4;
+      ctx.textAlign='center'; ctx.fillText(String(Math.round(240*(i/6))), tx, ty);
+    }
+
+    // center readouts
+    ctx.fillStyle='#eaf2ff'; ctx.textAlign='center';
+    ctx.font='34px system-ui'; ctx.fillText(rpmK.toFixed(0)+'k', cx, cy-8);
+    ctx.font='12px system-ui'; ctx.fillStyle='#cfe4ff';
+    ctx.fillText('EGT '+Math.round(egt)+' °C   •   THR '+Math.round(thrust)+' N', cx, cy+18);
+
+    // afterburner halo
+    if(ab){
+      const g=ctx.createRadialGradient(cx,cy,R*0.8,cx,cy,R*1.4);
+      g.addColorStop(0,'rgba(150,220,255,0.0)');
+      g.addColorStop(1,'rgba(150,220,255,0.18)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R*1.4,0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  /* ====================== Exhaust Lane (particles & bands) ====================== */
+  const lane = byId('lane'); let lctx = fitHiDPI(lane);
+  watchCanvas(lane, (ctx)=>{ lctx=ctx; });
+
+  const particles=[];
+  function spawn(mode, strength){
+    const rect=lane.getBoundingClientRect(), h=rect.height, x=rect.width*0.06, y=h*0.5 + (Math.random()-0.5)*8;
+    const life = (mode==='ab')? 1.4: (mode==='flame'?1.0: (mode==='smoke'?1.1:0.8));
+    const size = (mode==='smoke'? 8 : mode==='flame'? 6 : 4) * (0.8+Math.random()*0.6);
+    let col;
+    if(mode==='ab') col='rgba(170,225,255,0.75)';
+    else if(mode==='flame') col='rgba(255,170,100,0.65)';
+    else if(mode==='smoke') col='rgba(110,110,110,0.45)';
+    else col='rgba(160,200,255,0.18)';
+    particles.push({x,y,vx:(3 + strength*0.06)*(0.9+Math.random()*0.2), vy:(Math.random()-0.5)*0.5, life, age:0, size, col});
+  }
+  function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.fill(); }
+  function drawLane(mode, thrust, ab){
+    const rect=lane.getBoundingClientRect(), w=rect.width, h=rect.height;
+    const ctx=lctx; ctx.clearRect(0,0,w,h);
+    const bands=6, baseX=w*0.06;
+    for(let i=0;i<bands;i++){
+      const y=h*0.5 + (i-(bands-1)/2)*16;
+      const len= clamp(w*0.18 + thrust*0.4, w*0.2, w*0.9);
+      const g=ctx.createLinearGradient(baseX,y, baseX+len,y);
+      g.addColorStop(0, ab? 'rgba(180,220,255,.24)':'rgba(160,200,255,.12)');
+      g.addColorStop(1, 'rgba(160,200,255,0)');
+      ctx.fillStyle=g; roundRect(ctx, baseX, y-6, len, 12, 6);
+    }
+    const coreLen = clamp(w*0.2 + thrust*0.3, w*0.2, w*0.85);
+    if(mode==='smoke'){
+      const sg=ctx.createLinearGradient(baseX,h*0.5, baseX+coreLen*0.9,h*0.5);
+      sg.addColorStop(0,'rgba(100,100,100,.45)'); sg.addColorStop(1,'rgba(100,100,100,0)');
+      ctx.fillStyle=sg; roundRect(ctx, baseX, h*0.5-14, coreLen*0.9, 28, 12);
+    }
+    if(mode==='flame' || ab){
+      const fg=ctx.createLinearGradient(baseX,h*0.5, baseX+coreLen,h*0.5);
+      fg.addColorStop(0,'rgba(255,200,120,.85)'); fg.addColorStop(0.6,'rgba(255,120,60,.55)'); fg.addColorStop(1,'rgba(255,120,60,0)');
+      ctx.fillStyle=fg; roundRect(ctx, baseX, h*0.5-12, coreLen*0.9, 24, 10);
+    }
+    if(ab){
+      const bg=ctx.createLinearGradient(baseX,h*0.5, baseX+coreLen*1.08,h*0.5);
+      bg.addColorStop(0,'rgba(180,220,255,.9)'); bg.addColorStop(0.4,'rgba(140,220,255,.65)'); bg.addColorStop(1,'rgba(140,220,255,0)');
+      ctx.fillStyle=bg; roundRect(ctx, baseX, h*0.5-9, coreLen*0.92, 18, 9);
+      ctx.strokeStyle='rgba(200,240,255,.45)'; ctx.lineWidth=1.5;
+      for(let i=1;i<=4;i++){
+        const dx=baseX+i*(coreLen*0.18);
+        ctx.beginPath(); ctx.moveTo(dx-8,h*0.5); ctx.lineTo(dx,h*0.5-6); ctx.lineTo(dx+8,h*0.5); ctx.lineTo(dx,h*0.5+6); ctx.closePath(); ctx.stroke();
+      }
+    }
+    const rate = ab? 10 : mode==='flame'? 8 : mode==='smoke'? 6 : 3;
+    for(let i=0;i<rate;i++) spawn(ab?'ab':mode, thrust);
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i]; p.age+=1/60; const t=p.age/p.life;
+      if(t>=1){ particles.splice(i,1); continue; }
+      p.x+=p.vx; p.y+=p.vy+(ab?0:(Math.random()-0.5)*0.2);
+      const alpha=Math.max(0,1-t)*(ab?1: (mode==='clear'?0.2:1));
+      ctx.fillStyle=p.col.replace(/[\d\.]+\)$/ , alpha.toFixed(2)+')');
+      ctx.beginPath(); ctx.ellipse(p.x,p.y,p.size*(1+t*0.5), p.size*(0.6+0.4*Math.abs(Math.sin(p.age*5))),0,0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  /* ====================== Gauges (auto-rescaling radial) ====================== */
+  class AutoRadial {
+    constructor(cv,{min,max,unit,maj=6,minr=4}){
+      this.cv=cv; this.ct=fitHiDPI(cv); this.unit=unit; this.maj=maj; this.minr=minr;
+      this.targetMin=min; this.targetMax=max; this.min=min; this.max=max; this.value=min;
+      watchCanvas(cv,(ctx)=>{ this.ct=ctx; this.draw(this.value,true); });
+      this.draw(this.value,true);
+    }
+    niceRange(min, max, ticks=6){
+      const span = max-min || 1;
+      const step = Math.pow(10, Math.floor(Math.log10(span/ticks)));
+      const err = (span/ticks)/step;
+      const mult = err>=7.5?10 : err>=3.5?5 : err>=1.5?2 : 1;
+      const niceStep = mult*step;
+      const niceMin = Math.floor(min/niceStep)*niceStep;
+      const niceMax = Math.ceil(max/niceStep)*niceStep;
+      return [niceMin, niceMax, niceStep];
+    }
+    rescaleIfNeeded(v){
+      const pad=0.08;
+      if(v<this.min || v>this.max){
+        const lo = Math.min(this.min, v), hi = Math.max(this.max, v);
+        const paddedMin = lo - (hi-lo)*pad, paddedMax = hi + (hi-lo)*pad;
+        const [mn,mx] = this.niceRange(paddedMin, paddedMax, this.maj);
+        this.targetMin = mn; this.targetMax = mx;
+      }
+      // smooth range motion
+      this.min = this.min*0.85 + this.targetMin*0.15;
+      this.max = this.max*0.85 + this.targetMax*0.15;
+    }
+    angleFor(v){ const f=(v-this.min)/(this.max-this.min||1e-6); return (-120+clamp(f,0,1)*240)*Math.PI/180; }
+    draw(v){
+      this.value=v; this.rescaleIfNeeded(v);
+      const c=this.ct, r=this.cv.getBoundingClientRect(), w=r.width, h=r.height, cx=w/2, cy=h-8;
+      c.clearRect(0,0,w,h); const R=Math.min(w,h*1.22)/2 - 10;
+
+      // base arcs
+      c.lineWidth=16; c.strokeStyle='#1b2838';
+      c.beginPath(); c.arc(cx,cy,R+10,Math.PI*0.25,Math.PI*0.75); c.stroke();
+      const g=c.createLinearGradient(cx-R,cy,cx+R,cy);
+      g.addColorStop(0,'#7ad1ff'); g.addColorStop(.6,'#99cc33'); g.addColorStop(1,'#ff6b6b');
+      c.lineWidth=10; c.strokeStyle=g;
+      c.beginPath(); c.arc(cx,cy,R,-120*Math.PI/180,120*Math.PI/180); c.stroke();
+
+      // ticks/labels based on current range
+      const [mn,mx,step]=this.niceRange(this.min, this.max, this.maj);
+      for(let i=0;i<=this.maj;i++){
+        const val=mn + i*step*(this.maj/( (mx-mn)/step )); // map evenly across arc
+        const frac=(i/this.maj);
+        const a=(-120+240*frac)*Math.PI/180;
+        const x1=cx+R*Math.cos(a), y1=cy+R*Math.sin(a);
+        const x2=cx+(R-10)*Math.cos(a), y2=cy+(R-10)*Math.sin(a);
+        c.strokeStyle='#3a4b60'; c.lineWidth=2; c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+        const tx=cx+(R-22)*Math.cos(a), ty=cy+(R-22)*Math.sin(a)+4;
+        c.fillStyle='#bcd2e8'; c.font='11px system-ui'; c.textAlign='center';
+        c.fillText((val>=100?val.toFixed(0):val.toFixed(1)), tx, ty);
+        if(i<this.maj) for(let m=1;m<this.minr;m++){
+          const f=(i+m/this.minr)/this.maj, aa=(-120+240*f)*Math.PI/180;
+          c.strokeStyle='#30455e'; c.lineWidth=1; c.beginPath();
+          c.moveTo(cx+R*Math.cos(aa), cy+R*Math.sin(aa));
+          c.lineTo(cx+(R-6)*Math.cos(aa), cy+(R-6)*Math.sin(aa)); c.stroke();
+        }
+      }
+
+      // needle
+      const ang=this.angleFor(v);
+      c.save(); c.translate(cx,cy); c.rotate(ang);
+      c.fillStyle='#eaf2ff'; c.beginPath(); c.moveTo(-3,0); c.lineTo(0,-R*.8); c.lineTo(3,0); c.closePath(); c.fill();
+      c.fillStyle='#dff7d1'; c.beginPath(); c.arc(0,0,5,0,Math.PI*2); c.fill(); c.restore();
+
+      // readout
+      c.fillStyle='#eaf2ff'; c.textAlign='center'; c.font='22px system-ui';
+      c.fillText((v>=100?v.toFixed(0):v.toFixed(1)), cx, cy-R*.7);
+      c.font='11px system-ui'; c.fillStyle='#cfe4ff'; c.fillText(this.unit||'', cx, cy-R*.55);
+    }
+  }
+  const gRpm = new AutoRadial(byId('gRpm'),{min:0,max:240,unit:'×1000 rpm'});
+  const gEgt = new AutoRadial(byId('gEgt'),{min:100,max:1200,unit:'°C'});
+  const gThrust = new AutoRadial(byId('gThrust'),{min:0,max:400,unit:'N'});
+  const gFuel = new AutoRadial(byId('gFuel'),{min:0,max:140,unit:'g/s'});
+
+  /* ====================== Charts (Chart.js) ====================== */
+  const ca = byId('chartA').getContext('2d');
+  const cb = byId('chartB').getContext('2d');
+  function makeChart(ctx, labels){
+    return new Chart(ctx,{
+      type:'line',
+      data:{labels:[], datasets:labels.map(l=>({label:l, data:[], borderWidth:2, tension:.2}))},
+      options:{
+        responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{labels:{color:'#cfe4ff'}} },
+        scales:{ x:{ticks:{color:'#9fb4d0'}, grid:{color:'#1e2c3f'}},
+                 y:{ticks:{color:'#9fb4d0'}, grid:{color:'#1e2c3f'}} }
+      }
+    });
+  }
+  const chartRPMTHR = makeChart(ca,['RPM ×1000','Thrust (N)']);
+  const chartEGTFUEL = makeChart(cb,['EGT (°C)','Fuel (g/s)']);
+  function pushChart(chart, values){
+    chart.data.labels.push('');
+    values.forEach((v,i)=> chart.data.datasets[i].data.push(v));
+    const lim=600;
+    if(chart.data.labels.length>lim){ chart.data.labels.shift(); chart.data.datasets.forEach(d=>d.data.shift()); }
+    chart.update('none');
+  }
+
+  /* ====================== Controls ====================== */
+  const btnStart=byId('btnStart'), btnSpool=byId('btnSpool'), btnEStop=byId('btnEStop'), btnChaos=byId('btnChaos'), btnDyno=byId('btnDyno');
+  const slThrottle=byId('slThrottle'), vThrottle=byId('vThrottle');
+  const slNoz=byId('slNoz'), vNoz=byId('vNoz');
+  const tAB=byId('tAB'), chkLimiter=byId('chkLimiter'), selPreset=byId('selPreset');
+  const tAudio=byId('tAudio');
+  const pills={ign:byId('pIgn'), smoke:byId('pSmoke'), flame:byId('pFlame'), ab:byId('pAB'), over:byId('pOver')};
+  const healthBar=byId('healthBar');
+
+  function bindRange(sl,out,fmt){ const f=()=>out.textContent=fmt(+sl.value); sl.addEventListener('input',f); f(); }
+  bindRange(slThrottle,vThrottle,v=>Math.round(v*100)+'%');
+  bindRange(slNoz,vNoz,v=>(+v).toFixed(2)+'×');
+  let AB=false, chaos=false, dynoRunning=false;
+  function setAB(on){ AB=!!on; tAB.style.borderColor=AB?'#7ad1ff':'#233449'; pill(pills.ab, AB); }
+  tAB.addEventListener('click',()=>setAB(!AB));
+  btnChaos.addEventListener('click',()=>{ chaos=!chaos; btnChaos.style.borderColor=chaos?'#ff6b6b':'var(--acc)'; });
+  btnSpool.addEventListener('click',()=>{ spoolKick = Math.max(spoolKick, 1.0); });
+  btnEStop.addEventListener('click',()=>{ running=false; dynoRunning=false; btnStart.textContent='Start'; fuel=0; slThrottle.value=0; slThrottle.dispatchEvent(new Event('input')); stopAudio(); });
+  btnDyno.addEventListener('click',()=>{ if(dynoRunning){ dynoRunning=false; btnDyno.textContent='Dyno'; } else { dynoRunning=true; btnDyno.textContent='Stop Dyno'; runDyno(); } });
+
+  window.addEventListener('keydown',e=>{
+    if(e.key===' '){ e.preventDefault(); btnStart.click(); }
+    if(e.key==='ArrowUp'){ slThrottle.value=Math.min(1, +slThrottle.value+0.05); slThrottle.dispatchEvent(new Event('input')); }
+    if(e.key==='ArrowDown'){ slThrottle.value=Math.max(0, +slThrottle.value-0.05); slThrottle.dispatchEvent(new Event('input')); }
+    if(e.key==='s'||e.key==='S'){ btnSpool.click(); }
+    if(e.key==='x'||e.key==='X'){ btnEStop.click(); }
+    if(e.key==='a'||e.key==='A'){ setAB(!AB); }
+    if(e.key==='d'||e.key==='D'){ btnDyno.click(); }
+  });
+
+  /* ====================== Model (spool-friendly) ====================== */
+  const presets = {
+    small:  { safe:160_000, inertia:0.06, driveK:1.05, dragK:1.2e-6, baseFric:10 },
+    medium: { safe:170_000, inertia:0.075,driveK:1.00, dragK:1.0e-6, baseFric:11 },
+    large:  { safe:185_000, inertia:0.095,driveK:0.95, dragK:0.9e-6, baseFric:12 }
+  };
+  let P = {...presets.medium};
+  selPreset.addEventListener('change',()=>{ P={...presets[selPreset.value]}; });
+
+  let omega = 45_000 * 2*Math.PI/60; // rad/s
+  let fuel = 0, egt = 200, thrust=0, overspeedDamage=0, spoolKick=0, starterTimer=0;
+  const stoichAFR=15, airK=0.012, kFuelTorque=4.8, idleFuelFloor=16, lowSpeedBoostRPM=36_000;
+
+  function airMassFlow(omega,noz){ return airK * (omega/(2*Math.PI)) * noz; }
+  function egtStep(target,current,dt){ return current + (target-current)*Math.min(1, dt*2.2); }
+
+  /* ====================== Audio (optional) ====================== */
+  let actx=null, osc=null, noise=null, gain=null, nGain=null;
+  function setupAudio(){
+    if(actx) return;
+    actx = new (window.AudioContext||window.webkitAudioContext)();
+    gain = actx.createGain(); gain.gain.value=0;
+    nGain = actx.createGain(); nGain.gain.value=0;
+    osc = actx.createOscillator(); osc.type='sawtooth'; const filt = actx.createBiquadFilter(); filt.type='bandpass'; filt.Q.value=6;
+    osc.connect(filt).connect(gain).connect(actx.destination); osc.start();
+    const buffer = actx.createBuffer(1, actx.sampleRate*2, actx.sampleRate);
+    const data = buffer.getChannelData(0); for(let i=0;i<data.length;i++) data[i]=Math.random()*2-1;
+    noise = actx.createBufferSource(); noise.buffer=buffer; noise.loop=true; const nFilt=actx.createBiquadFilter(); nFilt.type='highpass'; nFilt.frequency.value=500;
+    noise.connect(nFilt).connect(nGain).connect(actx.destination); noise.start();
+    setupAudio.filt=filt;
+  }
+  let audioOn=false; tAudio.addEventListener('click',()=>{ audioOn=!audioOn; tAudio.textContent = audioOn?'🔊 Audio':'🔇 Audio'; if(!audioOn) stopAudio(); else { setupAudio(); actx.resume(); } });
+  function stopAudio(){ if(gain) gain.gain.value=0; if(nGain) nGain.gain.value=0; }
+
+  /* ====================== Loop ====================== */
+  let running=false, lastT=performance.now(), tAccum=0;
+  btnStart.addEventListener('click', ()=>{
+    const willRun = !running;
+    if (willRun) { starterTimer = 1.1; lastT = performance.now(); requestAnimationFrame(loop); if(audioOn){ setupAudio(); actx.resume(); } }
+    running = willRun;
+    btnStart.textContent = running ? 'Pause' : 'Start';
+  });
+
+  function loop(){
+    if(!running) return;
+    const now=performance.now(), dt=Math.min(0.05,(now-lastT)/1000); lastT=now;
+    step(dt); requestAnimationFrame(loop);
+  }
+
+  function step(dt){
+    const throttle = +slThrottle.value, noz = +slNoz.value;
+
+    // Fuel schedule with idle floor & smoothing
+    const maxFuel = chaos? 180 : 120;
+    const targetFuel = Math.max(throttle*maxFuel, idleFuelFloor*(throttle>0.08?1:0));
+    fuel = smooth(fuel, targetFuel, 8, dt);
+
+    const mAir = airMassFlow(omega,noz);
+    const afr = mAir / Math.max(1e-3, fuel);
+    const rich = afr < (stoichAFR*0.85);
+
+    // EGT target
+    let targetEGT = 150 + 900*(1 - Math.exp(-fuel/45)) + (rich?120:0);
+    if (AB) targetEGT += 300*(fuel/maxFuel);
+    egt = egtStep(targetEGT, egt, dt);
+
+    // Drive vs drag (spool-friendly)
+    const rpm = omega*60/(2*Math.PI);
+    const driveEff = (1 - 0.45*overspeedDamage) * P.driveK * (chaos?1.15:1);
+    const lowBoost = 1 + 0.9 * Math.exp(-rpm/lowSpeedBoostRPM);
+    let Tdrive = driveEff * (kFuelTorque * fuel * lowBoost + (rich ? 10 : 0));
+    if (starterTimer > 0){ const fade = Math.max(0, 1 - rpm/25_000); Tdrive += 160 * fade; starterTimer -= dt; }
+    const Tdrag = P.dragK * omega*omega + (P.baseFric + 3*(noz-1));
+    if (spoolKick > 0){ omega += 4000*spoolKick*dt; spoolKick = Math.max(0, spoolKick - dt*1.8); }
+    const alpha = (Tdrive - Tdrag) / Math.max(0.02, P.inertia);
+    omega = Math.max(2000*2*Math.PI/60, omega + alpha*dt);
+
+    // Overspeed
+    if (chkLimiter.checked && rpm > P.safe) fuel *= 0.6;
+    if (!chkLimiter.checked && rpm > P.safe*1.12){ overspeedDamage = Math.min(1, overspeedDamage + dt*0.06); }
+    if (chkLimiter.checked){ overspeedDamage = Math.max(0, overspeedDamage - dt*0.02); }
+
+    // Thrust (cartoon)
+    const abFuel = AB ? throttle*40 : 0;
+    thrust = Math.max(0, 0.75 * (mAir + fuel + abFuel) * Math.sqrt((egt+273)/300) * (1.05 - (noz-1)*0.6));
+
+    // Modes & pills
+    const mode = AB ? 'ab' : (egt>680 ? 'flame' : (rich || egt>420 ? 'smoke' : 'clear'));
+    pill(pills.ign, fuel>6 || starterTimer>0);
+    pill(pills.smoke, mode==='smoke');
+    pill(pills.flame, mode==='flame');
+    pill(pills.over, (!chkLimiter.checked && rpm>P.safe) || overspeedDamage>0.01);
+
+    // Visuals
+    drawDonut(rpm/1000, egt, thrust, AB);
+    drawLane(mode, thrust, AB);
+
+    // Gauges (auto-rescaling)
+    gRpm.draw(rpm/1000); gEgt.draw(egt); gThrust.draw(thrust); gFuel.draw(fuel + (AB?abFuel:0));
+    healthBar.style.width = (100*(1-overspeedDamage)).toFixed(0)+'%';
+
+    // Charts
+    tAccum += dt; if(tAccum>0.05){
+      pushChart(chartRPMTHR, [rpm/1000, thrust]);
+      pushChart(chartEGTFUEL, [egt, fuel + (AB?abFuel:0)]);
+      tAccum=0;
+    }
+
+    // Audio follow
+    if(audioOn && actx){
+      const f = 100 + (rpm/1000)*25;
+      osc.frequency.setTargetAtTime(f*20, actx.currentTime, 0.02);
+      setupAudio.filt.frequency.setTargetAtTime(800 + (rpm/1000)*120, actx.currentTime, 0.02);
+      gain.gain.setTargetAtTime(clamp(throttle*0.15 + (rpm/170000)*0.2,0,0.35), actx.currentTime, 0.05);
+      nGain.gain.setTargetAtTime(AB? 0.25*throttle : 0.0, actx.currentTime, 0.05);
+    }
+  }
+
+  /* ====================== Dyno (auto test mode) ====================== */
+  async function runDyno(){
+    if(!running) btnStart.click();
+    const wait = (ms)=>new Promise(res=>{
+      let t=0; function tick(ts){ if(!runDyno.active) return res(); if(!tick.last) tick.last=ts; const dt=ts-(tick.last); tick.last=ts; t+=dt; if(t>=ms) return res(); requestAnimationFrame(tick); }
+      requestAnimationFrame(tick);
+    });
+    const tween = (dur, apply)=>new Promise(res=>{
+      let t0=null;
+      function stepAnim(ts){
+        if(!runDyno.active) return res();
+        if(!t0) t0=ts; const p=clamp((ts-t0)/dur,0,1); apply(p);
+        if(p>=1) return res(); requestAnimationFrame(stepAnim);
+      }
+      requestAnimationFrame(stepAnim);
+    });
+    const setThrottle=(v)=>{ slThrottle.value=v; slThrottle.dispatchEvent(new Event('input')); };
+    const setNozzle=(v)=>{ slNoz.value=v; slNoz.dispatchEvent(new Event('input')); };
+    const preset=(name)=>{ selPreset.value=name; selPreset.dispatchEvent(new Event('change')); };
+
+    runDyno.active = true;
+
+    // Sequence
+    await tween(1000, p=> setThrottle(lerp(0.15,0.25,p))); if(!runDyno.active) return doneDyno();
+    await wait(1200);
+
+    await tween(2500, p=> setThrottle(lerp(0.25,0.45,p))); if(!runDyno.active) return doneDyno();
+    await wait(1200);
+
+    await tween(3000, p=> setThrottle(lerp(0.45,0.80,p))); if(!runDyno.active) return doneDyno();
+    setAB(true); await wait(2000);
+
+    // Nozzle sweep
+    await tween(2000, p=> setNozzle(lerp(1.0,1.3,p))); if(!runDyno.active) return doneDyno();
+    await tween(2000, p=> setNozzle(lerp(1.3,0.6,p))); if(!runDyno.active) return doneDyno();
+    await tween(1500, p=> setNozzle(lerp(0.6,1.0,p))); if(!runDyno.active) return doneDyno();
+
+    // Overspeed test
+    chkLimiter.checked=false;
+    await tween(2000, p=> setThrottle(lerp(0.80,1.00,p))); if(!runDyno.active) return doneDyno();
+    await wait(1800);
+    chkLimiter.checked=true;
+    setAB(false);
+    await tween(2000, p=> setThrottle(lerp(1.00,0.20,p))); if(!runDyno.active) return doneDyno();
+
+    // Preset cycle
+    preset('small'); await wait(1200);
+    preset('large'); await wait(1200);
+    preset('medium'); await wait(1200);
+
+    // Cooldown
+    await tween(1500, p=> setThrottle(lerp(0.20,0.00,p))); if(!runDyno.active) return doneDyno();
+    await wait(800);
+
+    doneDyno();
+    function doneDyno(){ runDyno.active=false; dynoRunning=false; btnDyno.textContent='Dyno'; }
+  }
+
+  /* ====================== Init ====================== */
+  // first paints
+  drawDonut(45,200,0,false); drawLane('clear',0,false);
+  gRpm.draw(45); gEgt.draw(200); gThrust.draw(0); gFuel.draw(0);
+
+})();
+</script>
+</body>
+</html>

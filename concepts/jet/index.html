@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Jet Engine Playground — No EGT Limiter</title>
+<style>
+  :root{
+    --bg:#0b0f14;--panel:#121821;--text:#e7f2ff;--muted:#8aa0b6;--accent:#5be7b2;
+    --warn:#ffd166;--danger:#ff6b6b;--ok:#72e06a;--card:#0f141b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 70% 20%,#101724,#0b0f14);
+       color:var(--text);font-family:system-ui,Segoe UI,Inter,Roboto,Arial,sans-serif;
+       min-height:100vh;display:grid;grid-template-rows:auto 1fr auto}
+  header{padding:14px 18px;display:flex;gap:12px;align-items:center;
+         border-bottom:1px solid #1e2633;background:linear-gradient(180deg,#0f1622,#0b111a)}
+  header h1{font-size:18px;margin:0;color:#cfe8ff;letter-spacing:.35px}
+  .badge{font-size:12px;color:#89a2bd;padding:2px 8px;border:1px solid #253043;border-radius:999px}
+  main{display:grid;grid-template-columns:430px 1fr;gap:18px;padding:18px}
+  @media (max-width:1200px){main{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid #1d2736;border-radius:14px;padding:14px;
+         box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  .panel h2{margin:2px 0 10px;font-size:14px;color:#cfe0fb;letter-spacing:.3px;font-weight:600}
+  .grid{display:grid;gap:10px}
+  .row{display:grid;grid-template-columns:158px 1fr 90px;gap:10px;align-items:center}
+  .row label{font-size:12px;color:#cdd9ea;user-select:none;cursor:default}
+  input[type="range"]{width:100%;touch-action:none}
+  input[type="number"]{width:100%;background:#0c121a;border:1px solid #273248;color:#cfe8ff;border-radius:8px;
+                       padding:8px 8px;font-variant-numeric:tabular-nums}
+  .subgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .btn{background:linear-gradient(180deg,#1b2535,#121a26);color:#cfe8ff;border:1px solid #253046;padding:10px 12px;border-radius:10px;
+       cursor:pointer;user-select:none;text-align:center;font-size:14px;transition:transform .06s ease,border-color .2s ease}
+  .btn:hover{transform:translateY(-1px);border-color:#2e3c56}
+  .btn.active{outline:2px solid #2c8e7b;background:linear-gradient(180deg,#1f2f3b,#13222b)}
+  .btn.warn{outline:2px solid var(--warn)}
+  .btn.ghost{background:transparent;border-style:dashed;color:#9cb2ca}
+  .rowBtns{display:flex;gap:10px;flex-wrap:wrap}
+  .chip{background:var(--card);border:1px solid #223048;border-radius:10px;padding:10px}
+  .chip .k{font-size:11px;color:#97abc2}
+  .chip .v{margin-top:4px;font-size:18px;font-variant-numeric:tabular-nums}
+  .chip.good{border-color:#234c34}.chip.warn{border-color:#5d511f}.chip.bad{border-color:#5a2626}
+  .sep{height:1px;background:#1d2635;margin:12px 0}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:#9cb2ca}
+  .legend .dot{width:10px;height:10px;border-radius:50%}
+  footer{padding:10px 14px;font-size:12px;color:#96a9bf;border-top:1px solid #1e2633;background:#0c1118}
+  select{background:#0c121a;border:1px solid #273248;color:#cfe8ff;border-radius:8px;padding:8px 10px}
+  .pill{display:inline-flex;gap:6px;align-items:center;border:1px solid #2a364a;padding:4px 8px;border-radius:999px;font-size:12px;color:#a6bad2}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  /* Visualizer — smaller default scale */
+  .vizWrap{height:200px;min-height:160px;display:grid}
+  @media (max-width:720px){.vizWrap{height:180px;min-height:150px}}
+  canvas#viz{
+    width:100%;height:100%;
+    border-radius:12px;background:#081018;border:1px solid #1a2230
+  }
+
+  /* Error banner */
+  #errBanner{
+    position:fixed;left:12px;right:12px;bottom:12px;
+    background:#2a0e12;border:1px solid #612126;color:#ffd6d6;
+    padding:10px 12px;border-radius:10px;font-size:12px;display:none;z-index:9999;
+    box-shadow:0 8px 24px rgba(0,0,0,.35)
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Jet Engine Playground</h1>
+    <div class="badge">Visualizer scaled</div>
+    <div class="badge">No EGT limiter</div>
+    <div class="badge">FADEC PR-only</div>
+  </header>
+
+  <main>
+    <!-- LEFT: Controls -->
+    <section class="panel">
+      <h2>Controls</h2>
+      <div class="grid" id="ctrlGrid"></div>
+
+      <div class="sep"></div>
+      <div class="rowBtns">
+        <div class="btn" id="starter">🔄 Starter</div>
+        <div class="btn" id="ignition">⚡ Ignition</div>
+        <div class="btn" id="cutoff">⛽ Fuel Cut</div>
+        <div class="btn" id="afterburner">🔥 Afterburner</div>
+        <div class="btn" id="fadec">🧠 FADEC-Assist</div>
+        <div class="btn ghost" id="pauseBtn">⏸️ Pause</div>
+        <div class="btn ghost" id="resetBtn">♻️ Reset</div>
+      </div>
+
+      <div class="sep"></div>
+      <div class="rowBtns">
+        <select id="presetSel" title="Presets">
+          <option value="SEA_IDLE">Preset: Sea-level Idle</option>
+          <option value="TAKEOFF">Preset: Takeoff</option>
+          <option value="AB_THRUST">Preset: Afterburner Burst</option>
+          <option value="HOT_HIGH">Preset: Hot & High</option>
+          <option value="CRUISE">Preset: Cruise 30k/450kt</option>
+          <option value="SURGE_TEST">Preset: Surge Test</option>
+        </select>
+        <div class="btn" id="applyPreset">Apply</div>
+      </div>
+
+      <div class="sep"></div>
+      <div class="rowBtns">
+        <select id="autoSel">
+          <option value="OFF">Auto Mode: Off</option>
+          <option value="COLD_START">Auto: Cold Start → Idle</option>
+          <option value="TO_AB_CLIMB">Auto: Idle → Takeoff → AB → Climb</option>
+          <option value="CRUISE_DESCENT">Auto: Cruise → Step Descent → Idle</option>
+          <option value="SURGE_HUNT">Auto: Surge Hunt (training)</option>
+        </select>
+        <div class="btn" id="autoStart">▶️ Start Auto</div>
+        <div class="btn" id="autoStop">⏹ Stop Auto</div>
+        <span class="pill">Time Scale <span id="tsVal">1.0×</span></span>
+      </div>
+    </section>
+
+    <!-- RIGHT: Viz + Gauges -->
+    <section class="panel">
+      <h2>Visualizer</h2>
+      <div class="vizWrap">
+        <canvas id="viz" width="800" height="200"></canvas>
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:var(--accent)"></div> Core exhaust
+        <div class="dot" style="background:var(--warn)"></div> Hot section
+        <div class="dot" style="background:var(--danger)"></div> Afterburner
+        <div class="dot" style="background:var(--ok)"></div> Intake flow
+        <span class="pill">Limiter: OFF</span>
+      </div>
+
+      <div class="sep"></div>
+      <h2>Gauges</h2>
+      <div class="subgrid">
+        <div class="chip"><div class="k">N1 Spool</div><div class="v mono" id="n1v">0.0 %</div></div>
+        <div class="chip"><div class="k">Net Thrust</div><div class="v mono" id="thrustv">0.0 kN</div></div>
+        <div class="chip" id="chipEGT"><div class="k">EGT</div><div class="v mono" id="egtv">— °C</div></div>
+      </div>
+      <div class="subgrid" style="margin-top:10px">
+        <div class="chip"><div class="k">Fuel Flow</div><div class="v mono" id="ffv">— kg/s</div></div>
+        <div class="chip"><div class="k">Air Mass Flow</div><div class="v mono" id="airv">— kg/s</div></div>
+        <div class="chip"><div class="k">Toy SFC</div><div class="v mono" id="sfcv">— kg/(kN·s)</div></div>
+      </div>
+      <div class="subgrid" style="margin-top:10px">
+        <div class="chip"><div class="k">Compressor Ratio</div><div class="v mono" id="prv">1.00 : 1</div></div>
+        <div class="chip"><div class="k">Turbine Load</div><div class="v mono" id="loadv">0.00</div></div>
+        <div class="chip"><div class="k">Nozzle Pressure</div><div class="v mono" id="npv">1.00 atm</div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Wheel over any slider/number to adjust (Shift = coarse). Double-click a label to reset that control. Space/S/I/F/A/R for quick ops.
+  </footer>
+
+  <div id="errBanner"></div>
+
+<script>
+(function(){
+  // ===== Helpers FIRST =====
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const lerp =(a,b,t)=>a+(b-a)*t;
+
+  // ===== Error banner (debug help) =====
+  const showErr = (msg) => {
+    const el = document.getElementById('errBanner');
+    el.textContent = 'Visualizer error: ' + msg;
+    el.style.display = 'block';
+  };
+  window.addEventListener('error', e => showErr(e.message || 'Unknown'));
+  window.addEventListener('unhandledrejection', e => showErr((e.reason && e.reason.message) || 'Unhandled rejection'));
+
+  // ===== Controls Spec =====
+  const controls = [
+    {key:'throttle',  label:'Throttle',          min:0,   max:100,  def:0,   step:1,   unit:'%'},
+    {key:'airPct',    label:'Inlet Air',         min:20,  max:140,  def:100, step:1,   unit:'%'},
+    {key:'mixPct',    label:'Fuel Schedule',     min:0,   max:150,  def:100, step:1,   unit:'%'},
+    {key:'nozzlePct', label:'Nozzle Area',       min:40,  max:160,  def:100, step:1,   unit:'%'},
+    {key:'friction',  label:'Spool Friction',    min:0,   max:200,  def:20,  step:.5,  unit:'%'},
+    {key:'ambC',      label:'Ambient Temp',      min:-40, max:50,   def:15,  step:1,   unit:'°C'},
+    {key:'alt_ft',    label:'Altitude',          min:0,   max:60000,def:0,   step:100, unit:'ft'},
+    {key:'tas_kts',   label:'Airspeed',          min:0,   max:700,  def:0,   step:5,   unit:'kt'},
+    {key:'timeScale', label:'Time Scale',        min:20,  max:300,  def:100, step:5,   unit:'%'},
+    /* Big power toys */
+    {key:'engScale',  label:'Engine Scale',      min:50,  max:300,  def:120, step:5,   unit:'%'},
+    {key:'abLevel',   label:'AB Level',          min:0,   max:200,  def:140, step:5,   unit:'%'},
+  ];
+
+  // ===== State =====
+  const st = {
+    running:true, t:0,
+    throttle:0, airPct:1.0, mixPct:1.0, nozzlePct:1.0, friction:0.2,
+    ambC:15, alt_ft:0, tas_kts:0, timeScale:1.0,
+    engScale:1.2, abLevel:1.4,
+    starter:false, ignition:false, cutoff:false, afterburner:false, fadec:true,
+    n1:0, egt:20, fuelFlow:0, airFlow:0, thrust:0, pr:1.0, nozzleP:1.0, turbineLoad:0.0,
+    lit:false, surge:0.0,
+    autoMode:'OFF', autoPhase:0, autoT:0
+  };
+
+  // ===== DOM build =====
+  const E=id=>document.getElementById(id);
+  const ctrlGrid = E('ctrlGrid');
+  const el = {};
+  controls.forEach(c=>{
+    const row = document.createElement('div'); row.className='row';
+    const label = document.createElement('label'); label.textContent = `${c.label} (${c.unit})`; label.title='Double-click to reset';
+    const range = document.createElement('input'); range.type='range'; range.min=c.min; range.max=c.max; range.value=c.def; range.step=1;
+    const num = document.createElement('input');  num.type='number';  num.min=c.min;  num.max=c.max;  num.step=c.step; num.value=c.def;
+    row.appendChild(label); row.appendChild(range); row.appendChild(num); ctrlGrid.appendChild(row);
+    el[c.key]={range,num,label};
+
+    label.addEventListener('dblclick', ()=> setControl(c.key, c.def));
+
+    const onWheel = target => ev=>{
+      ev.preventDefault();
+      const coarse = ev.shiftKey ? 5 : 1;
+      const delta = Math.sign(-ev.deltaY) * coarse;
+      let v = clamp(+target.value + delta*(target===num?c.step:1), c.min, c.max);
+      setControl(c.key, v);
+    };
+    range.addEventListener('wheel', onWheel(range), {passive:false});
+    num.addEventListener('wheel', onWheel(num), {passive:false});
+
+    range.addEventListener('input', ()=> setControl(c.key, +range.value));
+    num.addEventListener('input',   ()=> setControl(c.key, +num.value));
+  });
+
+  // central setter prevents desync & loops
+  function setControl(key, uiVal){
+    const spec = controls.find(x=>x.key===key); if (!spec) return;
+    uiVal = clamp(uiVal, spec.min, spec.max);
+    const {range,num} = el[key];
+    if (+range.value!==uiVal) range.value = uiVal;
+    if (+num.value!==uiVal)   num.value   = uiVal;
+
+    switch(key){
+      case 'throttle':  st.throttle  = uiVal/100; break;
+      case 'airPct':    st.airPct    = uiVal/100; break;
+      case 'mixPct':    st.mixPct    = uiVal/100; break;
+      case 'nozzlePct': st.nozzlePct = uiVal/100; break;
+      case 'friction':  st.friction  = uiVal/100; break;
+      case 'ambC':      st.ambC      = uiVal;     break;
+      case 'alt_ft':    st.alt_ft    = uiVal;     break;
+      case 'tas_kts':   st.tas_kts   = uiVal;     break;
+      case 'timeScale': st.timeScale = uiVal/100; E('tsVal').textContent=(st.timeScale).toFixed(1)+'×'; break;
+      case 'engScale':  st.engScale  = uiVal/100; break;
+      case 'abLevel':   st.abLevel   = uiVal/100; break;
+    }
+  }
+  controls.forEach(c=> setControl(c.key, c.def));
+
+  // ===== Buttons / toggles =====
+  const btn = {
+    starter:E('starter'), ignition:E('ignition'), cutoff:E('cutoff'),
+    afterburner:E('afterburner'), fadec:E('fadec'),
+    pause:E('pauseBtn'), reset:E('resetBtn'),
+    presetSel:E('presetSel'), applyPreset:E('applyPreset'),
+    autoSel:E('autoSel'), autoStart:E('autoStart'), autoStop:E('autoStop')
+  };
+  function setToggle(k, on, dom, cls){
+    st[k]=!!on; dom.classList.toggle('active', st[k]); if (cls) dom.classList.toggle(cls, st[k]);
+  }
+  btn.starter.onclick = ()=> setToggle('starter', !st.starter, btn.starter);
+  btn.ignition.onclick= ()=> setToggle('ignition',!st.ignition,btn.ignition);
+  btn.cutoff.onclick  = ()=> { setToggle('cutoff', !st.cutoff, btn.cutoff); if(st.cutoff){ st.lit=false; } };
+  btn.afterburner.onclick = ()=> setToggle('afterburner', !st.afterburner, btn.afterburner, 'warn');
+  btn.fadec.onclick   = ()=> setToggle('fadec', !st.fadec, btn.fadec);
+
+  btn.pause.onclick = ()=>{
+    st.running = !st.running;
+    btn.pause.textContent = st.running ? '⏸️ Pause' : '▶️ Resume';
+  };
+  btn.reset.onclick = resetAll;
+
+  // keyboard hotkeys
+  document.addEventListener('keydown', e=>{
+    if (e.target.tagName==='INPUT' || e.target.tagName==='SELECT') return;
+    const k = e.key.toLowerCase();
+    if (k===' ') { btn.pause.click(); e.preventDefault(); }
+    else if (k==='s'){ btn.starter.click(); }
+    else if (k==='i'){ btn.ignition.click(); }
+    else if (k==='f'){ btn.cutoff.click(); }
+    else if (k==='a'){ btn.afterburner.click(); }
+    else if (k==='r'){ btn.reset.click(); }
+  });
+
+  // ===== Presets (sync button states) =====
+  function applyPreset(name){
+    const setMany = obj => Object.entries(obj).forEach(([k,v])=> setControl(k,v));
+    const pres = {
+      SEA_IDLE:  ()=>{ setMany({throttle:22, airPct:100, mixPct:100, nozzlePct:112, friction:18, ambC:15, alt_ft:0, tas_kts:0, engScale:120, abLevel:140});
+                       setToggle('starter',false,btn.starter); setToggle('ignition',true,btn.ignition); setToggle('cutoff',false,btn.cutoff);
+                       setToggle('afterburner',false,btn.afterburner,'warn'); },
+      TAKEOFF:   ()=>{ setMany({throttle:88, airPct:100, mixPct:100, nozzlePct:92,  friction:20, ambC:15, alt_ft:0, tas_kts:20, engScale:130, abLevel:140});
+                       setToggle('ignition',true,btn.ignition); setToggle('afterburner',false,btn.afterburner,'warn'); },
+      AB_THRUST: ()=>{ setMany({throttle:100, airPct:120, mixPct:130, nozzlePct:135, friction:18, ambC:10, alt_ft:0, tas_kts:40, engScale:180, abLevel:180});
+                       setToggle('ignition',true,btn.ignition); setToggle('afterburner',true,btn.afterburner,'warn'); },
+      HOT_HIGH:  ()=>{ setMany({throttle:72, airPct:90,  mixPct:95,  nozzlePct:116, friction:22, ambC:35, alt_ft:9000, tas_kts:90, engScale:125, abLevel:120});
+                       setToggle('ignition',true,btn.ignition); setToggle('afterburner',false,btn.afterburner,'warn'); },
+      CRUISE:    ()=>{ setMany({throttle:56, airPct:100, mixPct:100, nozzlePct:106, friction:18, ambC:-10, alt_ft:30000, tas_kts:450, engScale:120, abLevel:120});
+                       setToggle('ignition',true,btn.ignition); setToggle('afterburner',false,btn.afterburner,'warn'); },
+      SURGE_TEST:()=>{ setMany({throttle:62, airPct:60,  mixPct:130, nozzlePct:82,  friction:20, ambC:15, alt_ft:0, tas_kts:0, engScale:120, abLevel:120});
+                       setToggle('ignition',true,btn.ignition); setToggle('afterburner',false,btn.afterburner,'warn'); }
+    }[name];
+    if (pres) pres();
+  }
+  btn.applyPreset.onclick = ()=> applyPreset(btn.presetSel.value);
+
+  // ===== Auto Mode =====
+  btn.autoStart.onclick = ()=>{ st.autoMode = btn.autoSel.value; st.autoPhase=0; st.autoT=0; };
+  btn.autoStop.onclick  = ()=>{ st.autoMode = 'OFF'; };
+
+  function runAuto(dt){
+    if (st.autoMode==='OFF') return;
+    st.autoT += dt;
+    const go=(key,target,s=0.8)=>{
+      const cur=+el[key].num.value; const nxt=cur+(target-cur)*Math.min(s*dt*st.timeScale,1);
+      setControl(key,nxt);
+    };
+    const done = ()=>{ st.autoMode='OFF'; };
+
+    switch(st.autoMode){
+      case 'COLD_START':
+        if (st.autoPhase===0){
+          setToggle('starter',true,btn.starter);
+          setToggle('ignition',true,btn.ignition);
+          go('throttle',15); go('mixPct',100); go('nozzlePct',118);
+          if (st.n1>25){ st.autoPhase=1; st.autoT=0; }
+        } else if (st.autoPhase===1){
+          go('throttle',25); go('nozzlePct',110);
+          if (st.autoT>3){ done(); }
+        }
+        break;
+
+      case 'TO_AB_CLIMB':
+        if (st.autoPhase===0){ applyPreset('SEA_IDLE'); st.autoPhase=1; st.autoT=0; }
+        else if (st.autoPhase===1){ go('throttle',95); go('nozzlePct',95); if (st.autoT>1.5){ st.autoPhase=2; st.autoT=0; } }
+        else if (st.autoPhase===2){ setToggle('afterburner',true,btn.afterburner,'warn'); go('nozzlePct',135); go('abLevel',180); go('engScale',180); if (st.autoT>4){ st.autoPhase=3; st.autoT=0; } }
+        else if (st.autoPhase===3){ setToggle('afterburner',false,btn.afterburner,'warn'); go('alt_ft',12000); go('tas_kts',250); if (st.autoT>5){ done(); } }
+        break;
+
+      case 'CRUISE_DESCENT':
+        if (st.autoPhase===0){ applyPreset('CRUISE'); st.autoPhase=1; st.autoT=0; }
+        else if (st.autoPhase===1){ go('alt_ft',15000); go('tas_kts',320); go('throttle',45); if (st.autoT>6){ st.autoPhase=2; st.autoT=0; } }
+        else if (st.autoPhase===2){ go('alt_ft',3000); go('tas_kts',180); go('throttle',25); if (st.autoT>6){ st.autoPhase=3; st.autoT=0; } }
+        else if (st.autoPhase===3){ go('throttle',0); setToggle('ignition',false,btn.ignition); done(); }
+        break;
+
+      case 'SURGE_HUNT':
+        setToggle('ignition',true,btn.ignition);
+        setControl('mixPct', 110 + 25*Math.sin(st.t*0.8));
+        setControl('airPct',  80  - 15*Math.sin(st.t*0.8));
+        setControl('nozzlePct', 90 + 10*Math.cos(st.t*0.9));
+        setControl('throttle',  55 + 15*Math.sin(st.t*0.6+1));
+        break;
+    }
+  }
+
+  // ===== Visualizer bootstrap (small + crisp) =====
+  const viz = E('viz');
+  const ctx = viz.getContext('2d');
+
+  function fitCanvas(){
+    const dpr = window.devicePixelRatio || 1;
+    const parent = viz.parentElement;
+    const cssW = (viz.clientWidth || (parent && parent.clientWidth) || 800);
+    const cssH = (viz.clientHeight || (parent && parent.clientHeight) || 200);
+    const bsW = Math.max(1, Math.floor(cssW * dpr));
+    const bsH = Math.max(1, Math.floor(cssH * dpr));
+    if (viz.width !== bsW) viz.width = bsW;
+    if (viz.height!== bsH) viz.height= bsH;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function size(){
+    const dpr = window.devicePixelRatio || 1;
+    return { w: Math.round(viz.width / dpr), h: Math.round(viz.height / dpr) };
+  }
+  fitCanvas();
+  if ('ResizeObserver' in window){
+    const ro = new ResizeObserver(()=>{ fitCanvas(); drawViz(); });
+    ro.observe(viz); ro.observe(viz.parentElement);
+  }
+  window.addEventListener('resize', ()=>{ fitCanvas(); drawViz(); });
+
+  // ===== Atmosphere & physics =====
+  function isa(alt_ft, ambC){
+    const alt_m = alt_ft*0.3048, T0=288.15, L=0.0065, p0=101325, g0=9.80665, R=287.05;
+    const Tamb = ambC+273.15;
+    let T = T0 - L*alt_m; let p = p0*Math.pow(1-(L*alt_m)/T0, g0/(R*L));
+    T = clamp(T + (Tamb-T0)*0.5, 190, 330);
+    p = p*clamp(1+(Tamb-(T0-L*alt_m))/600, 0.8, 1.2);
+    const rho = p/(R*T);
+    return {p,rho,T};
+  }
+
+  const MAX_RPM=100, INERTIA=6.8, STARTER_TORQUE=0.95, IDLE_FUEL=0.02, MAX_FUEL=1.10, MAX_AIR=1.8;
+
+  function step(dt){
+    dt = dt * st.timeScale;
+
+    const atm=isa(st.alt_ft, st.ambC);
+    const rhoRel=clamp(atm.rho/1.225, 0.35, 1.25);
+    const ram=clamp(st.tas_kts/700, 0, 0.6);
+
+    const inletAir = clamp(st.airPct * rhoRel * (1+0.6*ram), 0.2, MAX_AIR);
+    const reqPR = 1.0 + 9.5*Math.pow(st.throttle,1.2)*inletAir;
+
+    const n1f = st.n1/100;
+    let compPR = 1.0 + 9.3*Math.pow(n1f,1.4)*inletAir;
+    compPR = Math.min(compPR, 1.0+10.5*inletAir);
+
+    const mix = clamp(st.mixPct, 0.0, 1.5);
+    let fuelCmd = clamp((st.throttle*0.80 + IDLE_FUEL)*mix, 0, MAX_FUEL);
+    if (st.cutoff) fuelCmd = 0;
+
+    // FADEC — PR-only trim (no temp-based limiting)
+    if (st.fadec){
+      const prError = clamp(reqPR-compPR, 0, 2.0);
+      const trim = clamp(1 - 0.45*prError, 0.5, 1.0);
+      fuelCmd *= trim;
+    }
+
+    // ignition / flameholding
+    const canLight = (st.ignition || st.lit) && (fuelCmd>0.008) && (compPR>1.03);
+    if (!st.lit && canLight) st.lit=true;
+    if (fuelCmd<0.005 || compPR<1.02) st.lit=false;
+
+    // torques
+    const turbEff = 0.36 + 0.26*Math.min(1, n1f+0.2);
+    const turbTorque = st.lit ? fuelCmd*6.8*turbEff : 0.0; // a touch stronger
+    const compLoad = (compPR-1.0)*2.7*inletAir;
+
+    // nozzle/backpressure
+    const noz=clamp(st.nozzlePct,0.4,1.6);
+    const backPressure = 1.0 + (1.22 - noz);
+    st.nozzleP = backPressure;
+
+    // surge heuristic
+    const surgeDemand = (fuelCmd*1.9)/(inletAir*0.9+0.05);
+    let surge = clamp((surgeDemand*backPressure)-1.1, 0, 1.0);
+    compPR *= (1.0 - 0.35*surge);
+    st.surge = lerp(st.surge, surge, clamp(4*dt,0,1));
+
+    // net torque & spool
+    let net = turbTorque - compLoad - (st.friction*(0.3+0.7*n1f));
+    if (st.starter && st.n1<45) net += STARTER_TORQUE*(1.0-n1f);
+    const dn = (net/INERTIA)*100*dt;
+    st.n1 = clamp(st.n1 + dn, 0, MAX_RPM);
+
+    // temps
+    let baseEGT = st.ambC + 80 + fuelCmd*1600*(0.7+0.6*backPressure) - inletAir*90;
+    // afterburner (scaled by AB Level and Engine Scale)
+    let abThrust=0;
+    if (st.afterburner && st.lit && st.n1>35){
+      const abEff = clamp((noz-0.9)*2.2, 0, 1);
+      baseEGT += 260*abEff*st.abLevel;
+      abThrust = 28*abEff*(0.4+0.6*st.throttle)*st.abLevel*st.engScale*1.8;
+    }
+    st.egt = lerp(st.egt, baseEGT, clamp(2.5*dt,0,1));
+
+    // flows (scaled by Engine Size)
+    st.airFlow  = 0.6*inletAir*(0.4+1.4*n1f)*st.engScale;
+    st.fuelFlow = st.lit ? fuelCmd*0.6*st.engScale : 0.0;
+
+    // thrust (bigger ceilings)
+    const V = 320*(compPR-1.0)*(1.2/noz);
+    let coreTh = clamp(st.airFlow*(V/100), 0, 700);
+    coreTh *= (1.0-0.25*st.friction);
+    coreTh *= (1.0-0.25*st.surge);
+    coreTh *= (0.85 + 0.35*rhoRel);
+    st.thrust = clamp(coreTh + abThrust, 0, 1000);
+
+    // gauges
+    st.pr = compPR;
+    st.turbineLoad = clamp(compLoad/6.0, 0, 1.6);
+  }
+
+  function resetAll(){
+    controls.forEach(c=> setControl(c.key, c.def));
+    setToggle('starter',false,btn.starter);
+    setToggle('ignition',false,btn.ignition);
+    setToggle('cutoff', false,btn.cutoff);
+    setToggle('afterburner',false,btn.afterburner,'warn');
+    setToggle('fadec', true, btn.fadec);
+    st.n1=0; st.egt=20; st.fuelFlow=0; st.airFlow=0; st.thrust=0; st.pr=1; st.nozzleP=1; st.turbineLoad=0; st.lit=false; st.surge=0;
+    btn.pause.textContent='⏸️ Pause';
+    st.running=true;
+  }
+
+  // ===== Draw =====
+  function drawViz(){
+    const {w, h} = size();
+    if (!w || !h){ fitCanvas(); return; }
+
+    ctx.clearRect(0,0,w,h);
+    const bg=ctx.createLinearGradient(0,0,0,h); bg.addColorStop(0,'#071019'); bg.addColorStop(1,'#0d1320'); ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
+    const pad = Math.min(36, w*0.05);
+    const x0=pad, y0=h*0.18, engW=w-2*pad, engH=h*0.64;
+
+    // intake ribbons
+    ctx.fillStyle='rgba(114,224,106,0.35)'; const drift=7*(0.2+0.8*st.tas_kts/700);
+    for(let i=0;i<6;i++){ const y=y0+engH*(i+0.5)/6; ctx.fillRect(x0-22-drift*Math.sin((st.t*2+i)*0.7), y-2, 18*(0.6+0.6*st.airPct), 4); }
+
+    // engine box
+    ctx.strokeStyle='#223449'; ctx.lineWidth=2; ctx.strokeRect(x0,y0,engW,engH);
+
+    // compressor
+    const cx=x0+engW*0.20; ctx.fillStyle='rgba(91,231,178,0.16)'; ctx.fillRect(cx-26,y0+8,52,engH-16);
+    ctx.save(); ctx.translate(cx,y0+engH/2); ctx.rotate(st.t*(1.5+6*st.n1/100));
+    ctx.strokeStyle='#5be7b2'; ctx.beginPath(); ctx.moveTo(-15,0); ctx.lineTo(15,0); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(0,15); ctx.stroke(); ctx.restore();
+
+    // combustor + turbine
+    const bx=x0+engW*0.45, tx=x0+engW*0.70;
+    ctx.fillStyle='rgba(255,209,102,0.10)'; ctx.fillRect(bx-34,y0+6,68,engH-12);
+    ctx.fillStyle='rgba(255,107,107,0.10)'; ctx.fillRect(tx-26,y0+8,52,engH-16);
+
+    // heat glow
+    const ekt = clamp((st.egt-200)/800,0,1); ctx.fillStyle=`rgba(255,209,102,${0.12+0.28*ekt})`; ctx.fillRect(bx-34,y0+6,68,engH-12);
+
+    // plumes (scaled to the smaller canvas)
+    const nx=x0+engW*0.92, plume=12+30*st.thrust/1000;
+    ctx.fillStyle='rgba(91,231,178,0.45)'; ctx.beginPath(); ctx.moveTo(nx, y0+engH*0.25);
+    ctx.quadraticCurveTo(nx+plume*0.9, y0+engH*0.5, nx, y0+engH*0.75); ctx.closePath(); ctx.fill();
+
+    if (st.afterburner){ const ab=10+60*clamp(st.thrust/1000,0,1); ctx.fillStyle='rgba(255,107,107,0.48)';
+      ctx.beginPath(); ctx.moveTo(nx, y0+engH*0.32); ctx.quadraticCurveTo(nx+ab, y0+engH*0.5, nx, y0+engH*0.68); ctx.closePath(); ctx.fill();
+    }
+
+    // surge flash
+    if (st.surge>0.1){ ctx.fillStyle=`rgba(255,107,107,${0.12*st.surge})`; ctx.fillRect(x0,y0,engW,engH); }
+
+    // labels
+    ctx.fillStyle='#8ea6bf'; ctx.font='11px system-ui,sans-serif';
+    ctx.fillText('Intake', x0+6,y0-6); ctx.fillText('Compressor', cx-28,y0-6); ctx.fillText('Combustor', bx-30,y0-6);
+    ctx.fillText('Turbine', tx-18,y0-6); ctx.fillText('Nozzle', nx-18,y0-6);
+  }
+
+  function updateGauges(){
+    const num=(x,d=1)=>x.toFixed(d);
+    const chip = {
+      n1:E('n1v'), thr:E('thrustv'), egt:E('egtv'), ff:E('ffv'), air:E('airv'), sfc:E('sfcv'),
+      pr:E('prv'), load:E('loadv'), np:E('npv'), egtChip:E('chipEGT')
+    };
+    chip.n1.textContent = num(st.n1,1)+' %';
+    chip.thr.textContent = num(st.thrust,1)+' kN';
+    chip.egt.textContent = num(st.egt,0)+' °C';
+    chip.ff.textContent  = num(st.fuelFlow,3)+' kg/s';
+    chip.air.textContent = num(st.airFlow,3)+' kg/s';
+    chip.sfc.textContent = st.thrust>0 ? num(st.fuelFlow/st.thrust,3) : '—';
+    chip.pr.textContent  = num(st.pr,2)+' : 1';
+    chip.load.textContent= num(st.turbineLoad,2);
+    chip.np.textContent  = num(st.nozzleP,2)+' atm';
+
+    let egtClass='chip'; if (st.egt>850) egtClass+=' bad'; else if (st.egt>750) egtClass+=' warn';
+    chip.egtChip.className = egtClass;
+  }
+
+  // ===== Loop =====
+  let last=performance.now();
+  function tick(now){
+    try{
+      const dt = Math.min(0.05, (now-last)/1000); last=now;
+      if (st.running){
+        st.t += dt;
+        runAuto(dt);
+        step(dt);
+        drawViz();
+        updateGauges();
+      }
+      requestAnimationFrame(tick);
+    }catch(err){
+      showErr(err.message || String(err));
+      requestAnimationFrame(tick);
+    }
+  }
+  requestAnimationFrame(tick);
+
+})();
+</script>
+</body>
+</html>
