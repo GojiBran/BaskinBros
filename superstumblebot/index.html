@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SuperStumbleBot Commands — BaskinBros</title>
+<meta name="description" content="SuperStumbleBot commands, triggers, and the GojiBux + Weed economy — formatted for BaskinBros with accordions." />
+<meta name="theme-color" content="#99cc33" />
+
+<style>
+  :root{
+    --bg:#202020; --fg:#99cc33; --muted:#7da42a; --dim:#6f7f60;
+    --card:#242424; --card2:#1a1a1a; --border:#2b2b2b; --link:#99cc33;
+    --link-underline:rgba(153,204,51,.35); --code:#2a2a2a; --kbd:#2c2c2c;
+    --shadow:0 3px 18px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,Monaco,"Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono","Courier New",monospace;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    padding-top:3.25rem;
+  }
+
+  /* Top bar */
+  .top{
+    position:fixed; inset:0 0 auto 0; height:28px; z-index:9;
+    display:flex; align-items:center; justify-content:center; gap:.75rem;
+    background:#111; color:var(--fg); border-bottom:1px solid var(--border);
+  }
+  .top .brand{letter-spacing:.08em; font-weight:700}
+  .top a{color:var(--fg); text-decoration:none; opacity:.9; border-bottom:1px dashed var(--link-underline)}
+  .top a:hover{opacity:1}
+
+  .wrap{max-width:980px; margin:0 auto; padding:24px}
+  h1{font-size:1.35rem; margin:.6rem 0 .75rem}
+  a{color:var(--link); text-decoration:underline dotted var(--link-underline)}
+  a:hover{opacity:.95}
+  .toc{display:flex; gap:.5rem; flex-wrap:wrap; margin:.5rem 0 1rem}
+  .toc a{display:inline-block; padding:.25rem .5rem; border:1px dashed var(--border); border-radius:8px; background:var(--card2); text-decoration:none}
+  .toc a:hover{border-style:solid}
+  .controls{display:flex; gap:.5rem; flex-wrap:wrap; margin:0 0 1rem}
+  .btn{
+    cursor:pointer; border:1px solid var(--border); background:var(--card2); color:var(--fg);
+    border-radius:8px; padding:.35rem .6rem; box-shadow:var(--shadow);
+  }
+  .btn:hover{filter:brightness(1.05)}
+
+  /* Accordion (details/summary) */
+  details.acc{
+    background:var(--card); border:1px solid var(--border); border-radius:10px;
+    margin:.8rem 0; box-shadow:var(--shadow); overflow:hidden;
+  }
+  details.acc[open]{border-color:#345c0d}
+  summary.acc-head{
+    list-style:none; cursor:pointer; position:relative; padding:.85rem 2.5rem .85rem 1rem;
+    background:linear-gradient(180deg,#1a1a1a,#141414);
+    border-bottom:1px solid var(--border); user-select:none; outline:none;
+  }
+  summary.acc-head::-webkit-details-marker{display:none}
+  .acc-title{font-weight:700}
+  .acc-badge{font-size:.72rem; padding:.08rem .4rem; border:1px solid var(--border); border-radius:999px; background:var(--card2); margin-left:.5rem}
+  .chev{
+    position:absolute; right:.65rem; top:50%; transform:translateY(-50%) rotate(-90deg);
+    transition:transform .18s ease;
+    width:14px; height:14px; border:2px solid var(--fg); border-left-color:transparent; border-top-color:transparent; opacity:.85;
+  }
+  details[open] .chev{transform:translateY(-50%) rotate(45deg)}
+  .acc-body{
+    padding:.8rem 1rem;
+    /* animated open/close */
+    display:grid; grid-template-rows:0fr; transition:grid-template-rows .28s ease;
+  }
+  details[open] .acc-body{grid-template-rows:1fr}
+  .acc-inner{overflow:hidden}
+
+  /* Lists & tables inside */
+  ul{margin:.25rem 0 .6rem 1.1rem; padding:0}
+  li{margin:.15rem 0}
+  .tight > li{margin:.05rem 0}
+
+  table{width:100%; border-collapse:collapse; margin:.5rem 0; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; box-shadow:var(--shadow)}
+  thead th{text-align:left; font-weight:700; padding:.6rem .7rem; background:#151515; border-bottom:1px solid var(--border)}
+  td{padding:.5rem .7rem; vertical-align:top; border-top:1px solid var(--border)}
+  tr:nth-child(even) td{background:var(--card2)}
+  code,.cmd{
+    background:var(--code); color:var(--fg); padding:.06rem .35rem; border-radius:6px; border:1px solid var(--border); white-space:nowrap;
+  }
+  kbd{
+    background:var(--kbd); border:1px solid var(--border); border-bottom-color:#000; border-radius:6px; padding:.08rem .35rem; font-size:.85em;
+    box-shadow:inset 0 -1px 0 rgba(0,0,0,.35);
+  }
+  .foot{color:var(--dim); font-size:.85em; margin:.5rem 0 0}
+  .hr{height:1px; background:linear-gradient(90deg,transparent,var(--border),transparent); margin:1rem 0}
+</style>
+</head>
+<body>
+  <div class="top">
+    <span class="brand">BaskinBros</span> •
+    <a href="/">Home</a> •
+    <a href="https://github.com/GojiBran/SuperStumbleBot" target="_blank" rel="noopener">GitHub</a>
+  </div>
+
+  <main class="wrap">
+    <h1>SuperStumbleBot Commands List</h1>
+
+    <div class="controls">
+      <button class="btn" id="expandAll">Expand all</button>
+      <button class="btn" id="collapseAll">Collapse all</button>
+    </div>
+
+    <div class="toc">
+      <a href="#general">General</a>
+      <a href="#personalized">Personalized</a>
+      <a href="#media">Media</a>
+      <a href="#fun">Fun &amp; Humor</a>
+      <a href="#utility">Utility</a>
+      <a href="#notes">Notes</a>
+      <a href="#triggers">Triggers</a>
+      <a href="#cheers">Cheers &amp; Tokes</a>
+      <a href="#misc">Misc</a>
+      <a href="#lore">Lore</a>
+      <a href="#gbx">GojiBux</a>
+      <a href="#weed">Weed</a>
+      <a href="#police">Police</a>
+      <a href="#stats">Stats</a>
+      <a href="#admin">Admin</a>
+    </div>
+
+    <!-- GENERAL -->
+    <details id="general" class="acc" open>
+      <summary class="acc-head"><span class="acc-title">General Commands</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <ul class="tight">
+          <li><span class="cmd">.bot</span>: Provides links to download the bot and YouTube-only version.</li>
+          <li><span class="cmd">.commands</span>: Displays a list of basic commands.</li>
+          <li><span class="cmd">.commands list</span>: Links to the full commands list on GitHub.</li>
+          <li><span class="cmd">.suggest</span>: Explains how to suggest new commands for the bot.</li>
+        </ul>
+      </div></div>
+    </details>
+
+    <!-- PERSONALIZED -->
+    <details id="personalized" class="acc">
+      <summary class="acc-head"><span class="acc-title">Personalized Commands</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <ul class="tight">
+          <li><span class="cmd">.me [message]</span>: Sends <em>[nickname] [message]</em>.</li>
+          <li><span class="cmd">.my [message]</span>: Sends <em>[nickname]&rsquo;s [message]</em>.</li>
+          <li><span class="cmd">.cheers</span>: Personalized cheers (e.g., “[nickname] is smokin! Cheers! 🥦💨”).</li>
+          <li><span class="cmd">.420</span>: Personalized 420 message (e.g., “Happy 4:20! 🥦💨”).</li>
+          <li><span class="cmd">.self</span>: Shows nickname, username, handle, and mod status.</li>
+        </ul>
+      </div></div>
+    </details>
+
+    <!-- MEDIA -->
+    <details id="media" class="acc">
+      <summary class="acc-head"><span class="acc-title">Media Playback</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <ul class="tight">
+          <li><span class="cmd">.youtube [URL or query]</span>: Plays a YouTube video in chat.</li>
+          <li><span class="cmd">.play [query]</span>: Searches and plays a YouTube video.</li>
+          <li><span class="cmd">.history</span>: Shows last 10 plays.</li>
+        </ul>
+      </div></div>
+    </details>
+
+    <!-- FUN -->
+    <details id="fun" class="acc">
+      <summary class="acc-head"><span class="acc-title">Fun &amp; Humor</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <ul class="tight">
+          <li><span class="cmd">.penis</span>: Generates a random “penis length” message.</li>
+          <li><span class="cmd">.dance</span>: Random dancing GIF.</li>
+          <li><span class="cmd">.boobs</span>: Random boobs GIF.</li>
+          <li><span class="cmd">.booty</span>: Random booty GIF.</li>
+          <li><span class="cmd">.flamingo</span>: Random flamingo GIF.</li>
+          <li><span class="cmd">.froggy</span>: Froggy’s GIF.</li>
+          <li><span class="cmd">.dredd</span>: Freddie Dredd GIF.</li>
+          <li><span class="cmd">.meatmeat</span>: Random Sabrina Carpenter GIF.</li>
+          <li><span class="cmd">.bustin</span>: “Bustin” message with random variations.</li>
+        </ul>
+      </div></div>
+    </details>
+
+    <!-- UTILITY -->
+    <details id="utility" class="acc">
+      <summary class="acc-head"><span class="acc-title">Utility Commands</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <ul class="tight">
+          <li><span class="cmd">.time [timezone]</span>: Current time (e.g., <code>.time pst</code>).</li>
+          <li><span class="cmd">.zones</span>: Lists supported timezones.</li>
+          <li><span class="cmd">.currency [amount] [from] to [to]</span>: Convert (e.g., <code>.currency 50 usd to dkk</code>).</li>
+          <li><span class="cmd">.calc [expression]</span>: Calculator (e.g., <code>.calc 2+2</code>).</li>
+          <li><span class="cmd">.convert [value] [unit] to [unit]</span>: Unit conversion (e.g., <code>.convert 10 km to mi</code>).</li>
+          <li><span class="cmd">.dice [XdY]</span>: Dice roll (e.g., <code>.roll 2d6</code>).</li>
+          <li><span class="cmd">.choose [option1, option2, ...]</span>: Random picker.</li>
+        </ul>
+      </div></div>
+    </details>
+
+    <!-- NOTES -->
+    <details id="notes" class="acc">
+      <summary class="acc-head"><span class="acc-title">Universal Notes System</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <ul class="tight">
+          <li><span class="cmd">.note [text]</span>: Adds a note to shared storage (max 6; oldest drops first).</li>
+          <li><span class="cmd">.notes</span>: Displays all notes with 1s delay between each.</li>
+          <li><span class="cmd">.mynotes</span>: Displays your notes with 1s delay between each.</li>
+        </ul>
+      </div></div>
+    </details>
+
+    <!-- TRIGGERS -->
+    <details id="triggers" class="acc">
+      <summary class="acc-head"><span class="acc-title">Triggers &amp; Reactions</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <ul class="tight">
+          <li><code>ping</code> → <code>PONG</code></li>
+          <li><code>ding</code> → <code>DONG</code></li>
+          <li><code>gg</code> → celebratory messages</li>
+          <li><code>5-0</code> → “Cheese it!”</li>
+          <li><code>set</code> → “Let’s smoke!”</li>
+          <li><code>packed</code> → “Let’s toke!”</li>
+          <li><code>MAMA</code> → MAMA GIF</li>
+          <li><code>smoko</code> → “THEY’RE ON SMOKO! SO LEAVE EM ALONE!”</li>
+          <li><code>im on smoko</code> → “SO LEAVE EM ALONE!”</li>
+          <li><code>lfg</code> → “LET’S FUCKIN GO!!”</li>
+          <li><code>anal</code> → “IT’S TIME FOR AN ASS FUCKIN!”</li>
+          <li><code>deg</code> / <code>dag</code> → random dag GIF</li>
+          <li><code>oh hi mark</code> → GIF from <em>The Room</em></li>
+          <li><code>drugs got me fucked up</code> → “sluts got me drugged up, fuck.”</li>
+          <li><code>hops</code> → snarf hops image</li>
+          <li><code>wb</code> → random welcome-back GIF</li>
+          <li><code>j.r.o.c</code> → random J-Roc GIF</li>
+          <li><code>java</code> → Java-related 😉 GIF</li>
+          <li><code>fart</code> / <code>toot</code> → simulated fart + reactions</li>
+          <li><code>now this is a story</code> → <em>Fresh Prince of Bel-Air</em> lyrics</li>
+        </ul>
+      </div></div>
+    </details>
+
+    <!-- CHEERS -->
+    <details id="cheers" class="acc">
+      <summary class="acc-head"><span class="acc-title">Cheers &amp; Tokes</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <ul class="tight">
+          <li><span class="cmd">.c</span> / <span class="cmd">.cheers</span></li>
+          <li><span class="cmd">.sc</span> / <span class="cmd">.subcheers</span></li>
+          <li><span class="cmd">.d</span> / <span class="cmd">.dab</span></li>
+          <li><span class="cmd">.j</span> / <span class="cmd">.joint</span></li>
+          <li><span class="cmd">.p</span> / <span class="cmd">.prep</span></li>
+          <li><span class="cmd">.s</span> / <span class="cmd">.set</span></li>
+          <li><span class="cmd">.toke</span>, <span class="cmd">.tokes</span>, <span class="cmd">.tokes?</span></li>
+        </ul>
+      </div></div>
+    </details>
+
+    <!-- MISC -->
+    <details id="misc" class="acc">
+      <summary class="acc-head"><span class="acc-title">Miscellaneous</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <ul class="tight">
+          <li><span class="cmd">.char</span>: Cheers GIF.</li>
+          <li><span class="cmd">.chilidog</span>: Chilidog image.</li>
+          <li><span class="cmd">.claptrick</span>: Claptrick GIF.</li>
+          <li><span class="cmd">.hippo</span>: Hippo 😉 GIF.</li>
+          <li><span class="cmd">.lola</span>: Lola image.</li>
+          <li><span class="cmd">.wizard</span>: Wizard GIF.</li>
+          <li><span class="cmd">.packiedance</span>: Packie dance GIF.</li>
+          <li><span class="cmd">.vato</span>: Vato GIF.</li>
+          <li><span class="cmd">.escapetime</span>: Escapetime image.</li>
+          <li><span class="cmd">.baked</span>: Baked GIF.</li>
+          <li><span class="cmd">.beans</span>: Goji beans image.</li>
+          <li><span class="cmd">.carfart</span>: Car fart GIF.</li>
+          <li><span class="cmd">.spreadem</span>: “Spread em” GIF.</li>
+          <li><span class="cmd">.froggy</span>: Froggy’s GIF.</li>
+          <li><span class="cmd">.viper</span>: Viper GIF.</li>
+          <li><span class="cmd">.floyd</span>: Random Pink Floyd lyrics.</li>
+          <li><span class="cmd">.lyrics</span>: <em>Fresh Prince</em> lyrics.</li>
+        </ul>
+      </div></div>
+    </details>
+
+    <div class="hr"></div>
+
+    <!-- LORE -->
+    <details id="lore" class="acc">
+      <summary class="acc-head">
+        <span class="acc-title">🌍 The Ultimate Chat Economy</span>
+        <span class="acc-badge">GBX + Weed</span>
+        <span class="chev"></span>
+      </summary>
+      <div class="acc-body"><div class="acc-inner">
+        <p>In a world where <strong>GojiBux (GBX)</strong> fuels the economy and <strong>weed stashes</strong> dictate power, users engage in a dynamic trade system with fluctuating prices, heists, police busts, and black market deals. Will you rise to wealth, run an empire, or get busted by the cops?</p>
+      </div></div>
+    </details>
+
+    <!-- GBX -->
+    <details id="gbx" class="acc">
+      <summary class="acc-head"><span class="acc-title">🏦 GojiBux Economy</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <p><strong>LGH (Limited Goji Holdings)</strong> manages all GojiBux transactions to keep inflation in check.</p>
+        <ul class="tight">
+          <li>Earn GBX via play, trade, theft, and banking.</li>
+          <li>Hide money offshore to avoid theft.</li>
+          <li>Donate to the bank—or rob it.</li>
+          <li>Compete to be the richest.</li>
+        </ul>
+
+        <h3>💰 GojiBux Commands</h3>
+        <table>
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>.mybux</code></td><td>Check your GojiBux balance</td></tr>
+            <tr><td><code>.getbux</code> / <code>.gojibux</code> / <code>.gbx</code></td><td>Earn a random amount of GojiBux</td></tr>
+            <tr><td><code>.lgh</code> / <code>.bank</code></td><td>View LGH Bank’s total holdings</td></tr>
+            <tr><td><code>.donatebank [amount]</code></td><td>Donate GojiBux to LGH Bank</td></tr>
+            <tr><td><code>.givebux [user] [amount]</code></td><td>Give GojiBux to another user</td></tr>
+            <tr><td><code>.stealbux [user]</code></td><td>Attempt to steal GojiBux</td></tr>
+            <tr><td><code>.bankrob</code> / <code>.brob</code></td><td>Try to rob LGH Bank (high risk)</td></tr>
+            <tr><td><code>.bankheist</code> / <code>.bheist</code></td><td>Go bigger for a bigger reward</td></tr>
+            <tr><td><code>.stashbux [amount]</code></td><td>Hide GojiBux in an offshore account</td></tr>
+            <tr><td><code>.unstashbux [amount]</code></td><td>Withdraw from offshore stash</td></tr>
+            <tr><td><code>.mystashbux</code></td><td>Check offshore stash balance</td></tr>
+            <tr><td><code>.topbux</code></td><td>Top 3 richest users</td></tr>
+            <tr><td><code>.topstashbux</code> / <code>.topblk</code></td><td>Top 3 largest offshore stashes</td></tr>
+            <tr><td><code>.economy</code> / <code>.circulation</code></td><td>Total circulation of GojiBux &amp; Weed</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </details>
+
+    <!-- WEED -->
+    <details id="weed" class="acc">
+      <summary class="acc-head"><span class="acc-title">🥦 Weed &amp; Black Market Economy</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <p><strong>WGH (Weed Global Holdings)</strong> powers the underground market with dynamic prices, seshes, and the risk of busts.</p>
+
+        <h3>🥦 Weed Commands</h3>
+        <table>
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>.getweed</code> / <code>.grow</code></td><td>Get weed from WGH</td></tr>
+            <tr><td><code>.buyweed [amount]</code></td><td>Buy weed with GojiBux (price fluctuates)</td></tr>
+            <tr><td><code>.sellweed [amount]</code></td><td>Sell weed for GojiBux (market changes)</td></tr>
+            <tr><td><code>.priceweed</code></td><td>View current weed prices</td></tr>
+            <tr><td><code>.wgh</code> / <code>.dispo</code></td><td>View WGH Bank’s stash</td></tr>
+            <tr><td><code>.donateweed [amount]</code></td><td>Donate weed to WGH</td></tr>
+            <tr><td><code>.stashweed</code> / <code>.unstashweed</code></td><td>Hide or retrieve your weed</td></tr>
+            <tr><td><code>.mystashweed</code></td><td>Check your weed stash</td></tr>
+            <tr><td><code>.myweed</code></td><td>View your weed balance</td></tr>
+            <tr><td><code>.giveweed [user] [amount]</code></td><td>Send weed to another user</td></tr>
+            <tr><td><code>.stealweed [user]</code></td><td>Try to steal someone’s weed</td></tr>
+            <tr><td><code>.topweed</code></td><td>Top 3 weed stashes</td></tr>
+            <tr><td><code>.jointroll [amount]</code></td><td>Roll joints from weed</td></tr>
+            <tr><td><code>.myjoints</code></td><td>Check your joints stash</td></tr>
+            <tr><td><code>.jointsmoke [amount]</code></td><td>Smoke your joints</td></tr>
+            <tr><td><code>.sesh</code></td><td>Start a group sesh</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </details>
+
+    <!-- POLICE -->
+    <details id="police" class="acc">
+      <summary class="acc-head"><span class="acc-title">🚔 Police &amp; Crime System</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <ul class="tight">
+          <li>Buying/selling weed can trigger a <strong>police bust</strong>.</li>
+          <li>Bank robberies are <strong>high risk</strong>.</li>
+          <li>Stealing can <strong>backfire</strong>.</li>
+        </ul>
+        <p class="foot">Features: Police raids, risky heists, weed seizures.</p>
+      </div></div>
+    </details>
+
+    <!-- STATS -->
+    <details id="stats" class="acc">
+      <summary class="acc-head"><span class="acc-title">📊 Economy &amp; Statistics</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <table>
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>.wallet [username]</code> / <code>.balance</code> / <code>.bal</code></td><td>View your (or another&rsquo;s) full stats</td></tr>
+            <tr><td><code>.circulation</code> / <code>.economy</code></td><td>Total GBX, weed, joints, bank stash</td></tr>
+            <tr><td><code>.stats</code></td><td>Total users with economy accounts</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </details>
+
+    <!-- ADMIN -->
+    <details id="admin" class="acc">
+      <summary class="acc-head"><span class="acc-title">⚠️ Admin Commands (Reset Economy)</span><span class="chev"></span></summary>
+      <div class="acc-body"><div class="acc-inner">
+        <table>
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>.***</code></td><td>Wipe <strong>all</strong> economy data (LGH, WGH, stashes, balances)</td></tr>
+            <tr><td><code>.***</code></td><td>Reset all GojiBux balances</td></tr>
+          </tbody>
+        </table>
+        <p class="foot"><em>Handle with care.</em></p>
+      </div></div>
+    </details>
+
+    <p class="foot" style="margin-top:1rem">Made with 💚 for the BaskinBros universe. Theme: dark, neon, mono.</p>
+  </main>
+
+<script>
+  // Expand/Collapse All
+  const expandAllBtn = document.getElementById('expandAll');
+  const collapseAllBtn = document.getElementById('collapseAll');
+  const allAccordions = () => Array.from(document.querySelectorAll('details.acc'));
+
+  expandAllBtn.addEventListener('click', () => {
+    allAccordions().forEach(d => d.open = true);
+  });
+  collapseAllBtn.addEventListener('click', () => {
+    allAccordions().forEach(d => d.open = false);
+  });
+
+  // If navigating via hash, open that accordion and scroll nicely
+  function openHashTarget(){
+    if(!location.hash) return;
+    const el = document.querySelector(location.hash);
+    if(el && el.tagName.toLowerCase()==='details'){ el.open = true; }
+    // offset for fixed top bar
+    setTimeout(()=>window.scrollBy({top:-40,left:0,behavior:'instant'}),0);
+  }
+  window.addEventListener('hashchange', openHashTarget);
+  openHashTarget();
+
+  // Keyboard: let Enter/Space on summary still toggle (native), plus Arrow keys for quick nav
+  document.addEventListener('keydown', (e)=>{
+    if(!['ArrowDown','ArrowUp'].includes(e.key)) return;
+    const summaries = Array.from(document.querySelectorAll('summary.acc-head'));
+    const idx = summaries.indexOf(document.activeElement);
+    if(idx === -1) return;
+    e.preventDefault();
+    const next = e.key==='ArrowDown' ? Math.min(idx+1, summaries.length-1) : Math.max(idx-1, 0);
+    summaries[next].focus();
+  });
+</script>
+</body>
+</html>
