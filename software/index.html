@@ -46,10 +46,12 @@ p{font-size:.7rem;color:#d8d8d8;text-shadow:none;}
   border:1px solid #99cc33;
 }
 
+/* Card base */
 .card{
   background:#111;
   border:1px solid #99cc33;
   height:100%;
+  transition:box-shadow .25s, border-color .25s;
 }
 .card-title{font-size:.75rem;color:#99cc33;}
 .card-text{font-size:.65rem;color:#cfcfcf;text-shadow:none;}
@@ -65,6 +67,25 @@ p{font-size:.7rem;color:#d8d8d8;text-shadow:none;}
   font-size:.65rem;
   background:transparent;
 }
+
+/* Toolbar */
+#toolbar {
+  text-align:center;
+  margin-bottom:12px;
+}
+.toolbar-btn {
+  font-size:.65rem;
+  border:1px solid #99cc33;
+  background:transparent;
+  color:#99cc33;
+  padding:4px 8px;
+  margin:0 4px;
+  cursor:pointer;
+}
+.toolbar-btn:hover {
+  background:#99cc33;
+  color:#000;
+}
 </style>
 </head>
 <body>
@@ -77,8 +98,16 @@ p{font-size:.7rem;color:#d8d8d8;text-shadow:none;}
 </nav>
 
 <div class="container" style="padding-top:80px;">
+
   <h1 class="text-center mb-3">Goji Software List</h1>
-  <p class="text-center mb-4">Some tools for tinkering, dev, media, retro/emulation, etc.</p>
+  <p class="text-center mb-3">Some tools for tinkering, dev, media, retro/emulation, etc.</p>
+
+  <!-- ✅ Expand/Collapse Toolbar -->
+  <div id="toolbar">
+    <button class="toolbar-btn" onclick="expandAll()">Expand All</button>
+    <button class="toolbar-btn" onclick="collapseAll()">Collapse All</button>
+  </div>
+
   <div id="accordionMount" class="accordion"></div>
 </div>
 
@@ -100,11 +129,7 @@ function getGithubSlug(url){
 
 function candidateIconsFor(item){
   const list = [];
-
-  // Manual
   if (item.img?.trim()) list.push(item.img.trim());
-
-  // GitHub OpenGraph
   if (isGithub(item.link)) {
     const slug = item.github?.trim() || getGithubSlug(item.link);
     if (slug) list.push(`https://opengraph.githubassets.com/1/${slug}`);
@@ -123,7 +148,6 @@ function candidateIconsFor(item){
       "/favicon-152x152.png","/favicon-144x144.png",
       "/favicon-128x128.png"
     ];
-
     const midRes = [
       "/logo.png","/logo.svg",
       "/img/logo.png","/img/logo.svg",
@@ -131,7 +155,6 @@ function candidateIconsFor(item){
       "/favicon-96x96.png","/favicon-64x64.png",
       "/favicon-48x48.png","/favicon-32x32.png"
     ];
-
     const services = [
       "/favicon.ico",
       `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=256`,
@@ -151,9 +174,30 @@ function candidateIconsFor(item){
   return list;
 }
 
+/* ✅ Dominant color effect */
+function setDominantColor(img){
+  try{
+    const card = img.closest(".card");
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 8;
+    const ctx = canvas.getContext("2d",{willReadFrequently:true});
+    ctx.drawImage(img,0,0,8,8);
+
+    let r=0,g=0,b=0,n=0;
+    const d = ctx.getImageData(0,0,8,8).data;
+    for (let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];n++;}
+
+    const col = `rgb(${(r/n)|0},${(g/n)|0},${(b/n)|0})`;
+    card.style.borderColor = col;
+    card.style.boxShadow = `0 0 10px ${col}`;
+  }catch{}
+}
+
+/* Keep your original stability checks */
 function onIconLoaded(img){
   const w = img.naturalWidth, h = img.naturalHeight;
-  if (!w || !h || w <= 8 || h <= 8 || w/h > 4 || h/w > 4) onIconError(img);
+  if (!w || !h || w <= 8 || h <= 8 || w/h > 4 || h/w > 4) return onIconError(img);
+  setDominantColor(img);
 }
 
 function onIconError(img){
@@ -197,13 +241,13 @@ function renderSoftware(data){
                        src="${first}"
                        data-icons="${enc}"
                        data-idx="0"
-                       alt="${it.title} icon"
+                       alt="${it.title}"
                        onload="onIconLoaded(this)"
                        onerror="onIconError(this)">
                   <div class="card-body d-flex flex-column">
                     <h5 class="card-title">${it.title}</h5>
                     <p class="card-text flex-grow-1">${it.desc}</p>
-                    <a href="${it.link}" target="_blank" rel="noopener" class="btn btn-goji w-100">Visit</a>
+                    <a href="${it.link}" class="btn btn-goji w-100" target="_blank" rel="noopener">Visit</a>
                   </div>
                 </div>
               </div>`;
@@ -216,6 +260,18 @@ function renderSoftware(data){
 }
 
 loadSoftware();
+
+/* ✅ Expand/Collapse All */
+function expandAll(){
+  document.querySelectorAll(".accordion-collapse").forEach(el=>{
+    new bootstrap.Collapse(el,{show:true,toggle:true});
+  });
+}
+function collapseAll(){
+  document.querySelectorAll(".accordion-collapse.show").forEach(el=>{
+    new bootstrap.Collapse(el,{hide:true,toggle:true});
+  });
+}
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
