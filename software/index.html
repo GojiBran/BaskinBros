@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BaskinBros | Software List</title>
+
+<meta name="description" content="A categorized list of software used for system tools, development, creative work, media, remote control, game tooling, retro, and more.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://baskinbros.com/software">
+
+<meta property="og:title" content="BaskinBros Software List">
+<meta property="og:description" content="Curated tools for tinkering, dev, media, retro/emulation, and more.">
+<meta property="og:url" content="https://baskinbros.com/software">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://baskinbros.com/images/og-image.jpg">
+
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#202020">
+<link rel="icon" href="/favicon.ico">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+<style>
+body {
+  background:#202020;
+  color:#99cc33;
+  font-family:"Press Start 2P", monospace;
+  text-shadow:0 0 4px #99cc33;
+  padding-top:70px;
+}
+.navbar{background:#202020;border-bottom:1px solid #99cc33;}
+.navbar-brand,.navbar-text{color:#99cc33!important;font-size:.75rem;}
+h1{font-size:1rem;}
+p{font-size:.7rem;color:#d8d8d8;text-shadow:none;}
+
+.accordion-button{
+  background:#111!important;
+  color:#99cc33!important;
+  border:1px solid #99cc33;
+  font-size:.8rem;
+}
+.accordion-body{
+  background:#181818;
+  border:1px solid #99cc33;
+}
+
+.card{
+  background:#111;
+  border:1px solid #99cc33;
+  height:100%;
+}
+.card-title{font-size:.75rem;color:#99cc33;}
+.card-text{font-size:.65rem;color:#cfcfcf;text-shadow:none;}
+.card-img-top{
+  height:120px;
+  object-fit:contain;
+  background:#000;
+  border-bottom:1px solid #99cc33;
+}
+.btn-goji{
+  color:#99cc33;
+  border:1px solid #99cc33;
+  font-size:.65rem;
+  background:transparent;
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar fixed-top">
+  <div class="container">
+    <a class="navbar-brand" href="/">⬅ Back</a>
+    <span class="navbar-text">Software List</span>
+  </div>
+</nav>
+
+<div class="container" style="padding-top:80px;">
+  <h1 class="text-center mb-3">Software List</h1>
+  <p class="text-center mb-4">Simple categories. Automatic icons and thumbnails when possible.</p>
+
+  <div id="accordionMount" class="accordion"></div>
+</div>
+
+<script>
+/* -------------------------
+   Icon/thumbnails: chained fallback resolver
+   Priority:
+   1) item.img (manual override)
+   2) GitHub OpenGraph (if link is GitHub)
+   3) /apple-touch-icon.png (site)
+   4) /favicon.ico (site)
+   5) Google favicon service (domain, 128px)
+   6) window.PLACEHOLDER_ICON
+------------------------- */
+window.PLACEHOLDER_ICON = "/Grax_72x72px.png"; // set your placeholder path
+
+function isGithub(url){ try{ return new URL(url).hostname.includes("github.com"); }catch{ return false; } }
+function getGithubSlug(url){
+  try{
+    const u = new URL(url);
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (u.hostname === "github.com" && parts.length >= 2) return `${parts[0]}/${parts[1]}`;
+  }catch{}
+  return "";
+}
+function candidateIconsFor(item){
+  const list = [];
+  // 1) manual override
+  if (item.img && item.img.trim() !== "") list.push(item.img.trim());
+  // 2) GitHub OpenGraph
+  if (isGithub(item.link)) {
+    const slug = (item.github && item.github.trim()) ? item.github.trim() : getGithubSlug(item.link);
+    if (slug && slug.includes("/")) list.push(`https://opengraph.githubassets.com/1/${slug}`);
+  }
+  // 3–5) site favicons
+  try{
+    const u = new URL(item.link);
+    list.push(`${u.protocol}//${u.hostname}/apple-touch-icon.png`);
+    list.push(`${u.protocol}//${u.hostname}/favicon.ico`);
+    list.push(`https://www.google.com/s2/favicons?domain=${u.hostname}&sz=128`);
+  }catch{
+    // ignore
+  }
+  // 6) placeholder
+  list.push(window.PLACEHOLDER_ICON);
+  return list;
+}
+
+// onerror chain: try next candidate
+function onIconError(img){
+  const idx = Number(img.dataset.idx || "0");
+  const icons = JSON.parse(img.dataset.icons || "[]");
+  const next = idx + 1;
+  if (icons[next]) {
+    img.dataset.idx = String(next);
+    img.src = icons[next];
+  } else {
+    img.onerror = null;
+    img.src = window.PLACEHOLDER_ICON;
+  }
+}
+
+async function loadSoftware(){
+  const res = await fetch("software.json", {cache:"no-store"});
+  const data = await res.json();
+  renderSoftware(data);
+}
+
+function renderSoftware(data){
+  const mount = document.getElementById("accordionMount");
+  mount.innerHTML = (data.categories || []).map((cat,i)=>`
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="h${i}">
+        <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#c${i}">
+          ${cat.emoji||""} ${cat.name}
+        </button>
+      </h2>
+      <div id="c${i}" class="accordion-collapse collapse">
+        <div class="accordion-body">
+          <div class="row g-3">
+            ${(cat.items || []).map(it=>{
+              const icons = candidateIconsFor(it);
+              const first = icons[0] || window.PLACEHOLDER_ICON;
+              const encoded = JSON.stringify(icons).replace(/"/g,"&quot;");
+              return `
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-flex">
+                  <div class="card w-100">
+                    <img class="card-img-top"
+                         src="${first}"
+                         data-icons="${encoded}"
+                         data-idx="0"
+                         alt=""
+                         onerror="onIconError(this)">
+                    <div class="card-body d-flex flex-column">
+                      <h5 class="card-title">${it.title}</h5>
+                      <p class="card-text flex-grow-1">${it.desc}</p>
+                      <a href="${it.link}" target="_blank" rel="noopener" class="btn btn-goji w-100">Visit</a>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join("");
+}
+
+loadSoftware();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

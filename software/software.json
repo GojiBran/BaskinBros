@@ -1,0 +1,95 @@
+{
+  "categories": [
+    {
+      "name": "General",
+      "emoji": "📦",
+      "items": [
+        { "title": "Ninite", "desc": "Batch installer and software updater.", "link": "https://ninite.com/", "img": "", "github": "" }
+      ]
+    },
+    {
+      "name": "System Tools",
+      "emoji": "🧰",
+      "items": [
+        { "title": "Everything Search", "desc": "Instant file search for Windows.", "link": "https://www.voidtools.com/", "img": "", "github": "" },
+        { "title": "WinDirStat", "desc": "Disk usage visualizer and cleanup.", "link": "https://windirstat.net/", "img": "", "github": "" },
+        { "title": "7-Zip", "desc": "File archiver and compression utility.", "link": "https://www.7-zip.org/", "img": "", "github": "" },
+        { "title": "EarTrumpet", "desc": "Advanced volume mixer for Windows.", "link": "https://eartrumpet.app/", "img": "", "github": "" },
+        { "title": "FanControl", "desc": "PC fan control and temperature monitor.", "link": "https://getfancontrol.com/", "img": "", "github": "" },
+        { "title": "Rufus", "desc": "Bootable USB creation tool.", "link": "https://rufus.ie/en/", "img": "", "github": "" },
+        { "title": "Custom Resolution Utility", "desc": "Custom resolution and EDID tool.", "link": "https://www.monitortests.com/forum/Thread-Custom-Resolution-Utility-CRU", "img": "", "github": "" },
+        { "title": "Virtual Display Driver", "desc": "Virtual monitor display driver.", "link": "https://github.com/VirtualDrivers/Virtual-Display-Driver", "img": "", "github": "VirtualDrivers/Virtual-Display-Driver" }
+      ]
+    },
+    {
+      "name": "Development & Scripting",
+      "emoji": "🛠",
+      "items": [
+        { "title": "Windows Terminal", "desc": "Modern terminal application.", "link": "https://github.com/microsoft/terminal", "img": "", "github": "microsoft/terminal" },
+        { "title": "PowerShell", "desc": "Cross-platform shell and scripting language.", "link": "https://github.com/PowerShell/PowerShell", "img": "", "github": "PowerShell/PowerShell" },
+        { "title": "Phoenix Code Editor", "desc": "Open-source code editor.", "link": "https://github.com/phcode-dev/phoenix", "img": "", "github": "phcode-dev/phoenix" },
+        { "title": "AutoHotkey", "desc": "Automation scripting for Windows.", "link": "https://www.autohotkey.com/", "img": "", "github": "" },
+        { "title": "GB Studio", "desc": "Game Boy-style game creator.", "link": "https://www.gbstudio.dev/", "img": "", "github": "" }
+      ]
+    },
+    {
+      "name": "Creative Tools",
+      "emoji": "🎨",
+      "items": [
+        { "title": "GIMP", "desc": "Image editing software.", "link": "https://www.gimp.org/", "img": "", "github": "" },
+        { "title": "Blender", "desc": "3D creation suite.", "link": "https://www.blender.org/", "img": "", "github": "" },
+        { "title": "Aseprite", "desc": "Pixel art and animation tool.", "link": "https://www.aseprite.org/", "img": "", "github": "" },
+        { "title": "OBS Studio", "desc": "Recording and live streaming software.", "link": "https://obsproject.com/", "img": "", "github": "" },
+        { "title": "LibreOffice", "desc": "Open-source office suite.", "link": "https://www.libreoffice.org/", "img": "", "github": "" }
+      ]
+    },
+    {
+      "name": "Media & Playback",
+      "emoji": "🎬",
+      "items": [
+        { "title": "VLC Media Player", "desc": "Cross-platform media player.", "link": "https://www.videolan.org/vlc/", "img": "", "github": "" },
+        { "title": "HandBrake", "desc": "Video transcoder.", "link": "https://handbrake.fr/", "img": "", "github": "" },
+        { "title": "MusicBee", "desc": "Music library and player.", "link": "https://getmusicbee.com/", "img": "", "github": "" },
+        { "title": "K-Lite Codec Pack", "desc": "Codec bundle for Windows.", "link": "https://codecguide.com/download_kl.htm", "img": "", "github": "" },
+        { "title": "IrfanView", "desc": "Fast image viewer and converter.", "link": "https://www.irfanview.com/", "img": "", "github": "" },
+        { "title": "Plex", "desc": "Media server and streaming platform.", "link": "https://www.plex.tv/", "img": "", "github": "" }
+      ]
+    },
+    {
+      "name": "Remote & Device Control",
+      "emoji": "🌐",
+      "items": [
+        { "title": "Parsec", "desc": "Low-latency remote desktop.", "link": "https://parsec.app/", "img": "", "github": "" },
+        { "title": "scrcpy", "desc": "Android screen control.", "link": "https://github.com/Genymobile/scrcpy", "img": "", "github": "Genymobile/scrcpy" },
+        { "title": "WinSCP", "desc": "SFTP and SCP client for Windows.", "link": "https://winscp.net/", "img": "", "github": "" },
+        { "title": "PuTTY", "desc": "SSH client for remote systems.", "link": "https://www.chiark.greenend.org.uk/~sgtatham/putty/", "img": "", "github": "" }
+      ]
+    },
+    {
+      "name": "Game Tools & Modding",
+      "emoji": "🧩",
+      "items": [
+        { "title": "CKAN", "desc": "Kerbal mod manager.", "link": "https://github.com/KSP-CKAN/CKAN", "img": "", "github": "KSP-CKAN/CKAN" },
+        { "title": "Content Manager (Assetto Corsa)", "desc": "Launcher & mod tool for Assetto Corsa.", "link": "https://acstuff.ru/app/", "img": "", "github": "" },
+        { "title": "3D Fix Manager", "desc": "NVIDIA 3D Vision fix manager.", "link": "https://helixmod.blogspot.com/2017/05/3d-fix-manager.html", "img": "", "github": "" }
+      ]
+    },
+    {
+      "name": "Retro & Emulation",
+      "emoji": "🕹️",
+      "items": [
+        { "title": "MiSTer FPGA", "desc": "FPGA retro gaming platform.", "link": "https://misterfpga.org/", "img": "", "github": "" },
+        { "title": "RetroArch", "desc": "Multi-system emulator frontend.", "link": "https://www.retroarch.com/", "img": "", "github": "" },
+        { "title": "RetroPie", "desc": "Retro gaming OS for Raspberry Pi.", "link": "https://retropie.org.uk/", "img": "", "github": "" },
+        { "title": "CRT Emudriver & Tools", "desc": "Custom AMD driver & tools for CRT modelines/240p.", "link": "http://geedorah.com/eiusdemmodi/forum/viewtopic.php?id=295", "img": "", "github": "" }
+      ]
+    },
+    {
+      "name": "Games & Sandboxes",
+      "emoji": "🎮",
+      "items": [
+        { "title": "Powder Toy", "desc": "Physics sandbox simulation.", "link": "https://powdertoy.co.uk/", "img": "", "github": "" }
+      ]
+    }
+  ]
+}
