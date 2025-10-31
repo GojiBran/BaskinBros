@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BaskinBros | Goji Software List</title>
 
-<meta name="description" content="A categorized list of software used for system tools, development, creative work, media, remote control, game tooling, retro, and more.">
+<meta name="description" content="A categorized list of software used for tinkering, dev, media, retro/emulation, remote control, and more.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://baskinbros.com/software">
 
@@ -79,61 +79,88 @@ p{font-size:.7rem;color:#d8d8d8;text-shadow:none;}
 <div class="container" style="padding-top:80px;">
   <h1 class="text-center mb-3">Goji Software List</h1>
   <p class="text-center mb-4">Some tools for tinkering, dev, media, retro/emulation, etc.</p>
-
   <div id="accordionMount" class="accordion"></div>
 </div>
 
 <script>
-/* -------------------------
-   Icon/thumbnails: chained fallback resolver
-   Priority:
-   1) item.img (manual override)
-   2) GitHub OpenGraph (if link is GitHub)
-   3) /apple-touch-icon.png (site)
-   4) /favicon.ico (site)
-   5) Google favicon service (domain, 128px)
-   6) window.PLACEHOLDER_ICON
-------------------------- */
-window.PLACEHOLDER_ICON = "https://baskinbros.com/software/Grax_72x72px.png"; // set your placeholder path
+window.PLACEHOLDER_ICON = "https://baskinbros.com/software/Grax_72x72px.png";
 
-function isGithub(url){ try{ return new URL(url).hostname.includes("github.com"); }catch{ return false; } }
+function isGithub(url){
+  try{ return new URL(url).hostname.includes("github.com"); }
+  catch{ return false; }
+}
 function getGithubSlug(url){
   try{
     const u = new URL(url);
-    const parts = u.pathname.split("/").filter(Boolean);
-    if (u.hostname === "github.com" && parts.length >= 2) return `${parts[0]}/${parts[1]}`;
+    const p = u.pathname.split("/").filter(Boolean);
+    if (u.hostname==="github.com" && p.length>=2) return `${p[0]}/${p[1]}`;
   }catch{}
   return "";
 }
+
 function candidateIconsFor(item){
   const list = [];
-  // 1) manual override
-  if (item.img && item.img.trim() !== "") list.push(item.img.trim());
-  // 2) GitHub OpenGraph
+
+  // Manual
+  if (item.img?.trim()) list.push(item.img.trim());
+
+  // GitHub OpenGraph
   if (isGithub(item.link)) {
-    const slug = (item.github && item.github.trim()) ? item.github.trim() : getGithubSlug(item.link);
-    if (slug && slug.includes("/")) list.push(`https://opengraph.githubassets.com/1/${slug}`);
+    const slug = item.github?.trim() || getGithubSlug(item.link);
+    if (slug) list.push(`https://opengraph.githubassets.com/1/${slug}`);
   }
-  // 3–5) site favicons
+
   try{
     const u = new URL(item.link);
-    list.push(`${u.protocol}//${u.hostname}/apple-touch-icon.png`);
-    list.push(`${u.protocol}//${u.hostname}/favicon.ico`);
-    list.push(`https://www.google.com/s2/favicons?domain=${u.hostname}&sz=128`);
-  }catch{
-    // ignore
-  }
-  // 6) placeholder
+    const base = `${u.protocol}//${u.hostname}`;
+
+    const hiRes = [
+      "/android-chrome-512x512.png","/android-chrome-384x384.png",
+      "/android-chrome-256x256.png","/android-chrome-192x192.png",
+      "/apple-touch-icon.png",
+      "/logo512.png","/logo256.png","/logo192.png",
+      "/favicon-196x196.png","/favicon-180x180.png",
+      "/favicon-152x152.png","/favicon-144x144.png",
+      "/favicon-128x128.png"
+    ];
+
+    const midRes = [
+      "/logo.png","/logo.svg",
+      "/img/logo.png","/img/logo.svg",
+      "/static/logo.png","/static/logo.svg",
+      "/favicon-96x96.png","/favicon-64x64.png",
+      "/favicon-48x48.png","/favicon-32x32.png"
+    ];
+
+    const services = [
+      "/favicon.ico",
+      `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=256`,
+      `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=128`,
+      `https://favicone.com/${u.hostname}?s=256`,
+      `https://api.microlink.io/?url=${u.origin}&embed=logo`,
+      `https://favicon.zhusl.com/ico?url=${u.hostname}`
+    ];
+
+    [...hiRes, ...midRes, ...services].forEach(p =>
+      list.push(p.startsWith("http") ? p : base + p)
+    );
+
+  }catch{}
+
   list.push(window.PLACEHOLDER_ICON);
   return list;
 }
 
-// onerror chain: try next candidate
+function onIconLoaded(img){
+  const w = img.naturalWidth, h = img.naturalHeight;
+  if (!w || !h || w <= 8 || h <= 8 || w/h > 4 || h/w > 4) onIconError(img);
+}
+
 function onIconError(img){
-  const idx = Number(img.dataset.idx || "0");
-  const icons = JSON.parse(img.dataset.icons || "[]");
-  const next = idx + 1;
-  if (icons[next]) {
+  const idx = Number(img.dataset.idx||"0");
+  const icons = JSON.parse(img.dataset.icons||"[]");
+  const next = idx+1;
+  if (icons[next]){
     img.dataset.idx = String(next);
     img.src = icons[next];
   } else {
@@ -143,14 +170,13 @@ function onIconError(img){
 }
 
 async function loadSoftware(){
-  const res = await fetch("software.json", {cache:"no-store"});
-  const data = await res.json();
-  renderSoftware(data);
+  const res = await fetch("software.json",{cache:"no-store"});
+  renderSoftware(await res.json());
 }
 
 function renderSoftware(data){
-  const mount = document.getElementById("accordionMount");
-  mount.innerHTML = (data.categories || []).map((cat,i)=>`
+  const el = document.getElementById("accordionMount");
+  el.innerHTML = (data.categories||[]).map((cat,i)=>`
     <div class="accordion-item">
       <h2 class="accordion-header" id="h${i}">
         <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#c${i}">
@@ -160,27 +186,27 @@ function renderSoftware(data){
       <div id="c${i}" class="accordion-collapse collapse">
         <div class="accordion-body">
           <div class="row g-3">
-            ${(cat.items || []).map(it=>{
+            ${(cat.items||[]).map(it=>{
               const icons = candidateIconsFor(it);
               const first = icons[0] || window.PLACEHOLDER_ICON;
-              const encoded = JSON.stringify(icons).replace(/"/g,"&quot;");
+              const enc = JSON.stringify(icons).replace(/"/g,"&quot;");
               return `
-                <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-flex">
-                  <div class="card w-100">
-                    <img class="card-img-top"
-                         src="${first}"
-                         data-icons="${encoded}"
-                         data-idx="0"
-                         alt=""
-                         onerror="onIconError(this)">
-                    <div class="card-body d-flex flex-column">
-                      <h5 class="card-title">${it.title}</h5>
-                      <p class="card-text flex-grow-1">${it.desc}</p>
-                      <a href="${it.link}" target="_blank" rel="noopener" class="btn btn-goji w-100">Visit</a>
-                    </div>
+              <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-flex">
+                <div class="card w-100">
+                  <img class="card-img-top"
+                       src="${first}"
+                       data-icons="${enc}"
+                       data-idx="0"
+                       alt="${it.title} icon"
+                       onload="onIconLoaded(this)"
+                       onerror="onIconError(this)">
+                  <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">${it.title}</h5>
+                    <p class="card-text flex-grow-1">${it.desc}</p>
+                    <a href="${it.link}" target="_blank" rel="noopener" class="btn btn-goji w-100">Visit</a>
                   </div>
                 </div>
-              `;
+              </div>`;
             }).join("")}
           </div>
         </div>
