@@ -1,0 +1,7 @@
+<!-- Generic Meal Card Template -->
+<div class="card">
+    <img src="generic-meal.jpg" alt="Generic Meal">
+    <h2>Generic Meal Title</h2>
+    <p class="recipe"><strong>Ingredients</strong>: Ingredient 1, Ingredient 2, Ingredient 3, etc.</p>
+    <p><strong>Preparation</strong>: Step-by-step preparation instructions go here.</p>
+</div>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SuperStumbleBot</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #202020;
+      color: #99cc33;
+      font-family: 'Press Start 2P', monospace;
+      padding: 2rem;
+    }
+    h1, h2, h3, h4 {
+      color: #99cc33;
+    }
+/* Accordion style */
+.accordion-item {
+  background-color: #202020;
+  border-left: 4px solid #99cc33;
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
+  /*margin-bottom: 1rem;*/
+}
+
+.accordion-button {
+  background-color: #303030;
+  color: #99cc33;
+  border: none !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  padding: 1rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  white-space: normal;
+}
+
+.accordion-button:hover {
+  background-color: #383838;
+}
+
+.accordion-button:not(.collapsed) {
+  background-color: #404040;
+  color: #99cc33;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.accordion-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #99cc33;
+}
+
+.accordion-button::after {
+  background-image: none !important;
+  content: "+"; 
+  color: #99cc33;
+  font-weight: bold;
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.accordion-button:not(.collapsed)::after {
+  content: "−";
+}
+
+.accordion-body {
+  background-color: #202020;
+  color: #cccccc;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.95rem;
+  padding: 1rem;
+  border-top: 1px solid #404040;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.accordion-body code {
+  background-color: #151515;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.95rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.accordion-body .command-desc {
+  color: #99cc33;
+  margin-left: 0.4rem;
+}
+    code {
+      
+    }
+    pre {
+      font-family: 'Press Start 2P', monospace;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      background-color: #202020;
+      padding: 1rem;
+      color: #99cc33;
+      border-left: 4px solid #99cc33;
+    }
+    .divider {
+      border-bottom: 1px solid #333;
+      margin: 2rem 0;
+    }
+    ul {
+      padding-left: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1 class="mb-3">🤖 SuperStumbleBot</h1>
+    <p><em>The chaotic chatroom companion built for legends, stoners, and troublemakers.</em></p>
+
+    <div class="divider"></div>
+
+    <h3>📖 Lore</h3>
+    <pre>
+Origin File #420-A:
+
+In the digital wastelands of the net, where chatrooms flicker and fall, there was chaos… until *she* arrived.
+
+Forged from spaghetti code and stoner logic, SuperStumbleBot is no ordinary bot. She’s alive. She grows, she gambles, she <strong>smokes</strong>. Born from the ashes of forgotten userscripts and resurrected by the last survivors of StumbleChat, she came online with a single mission:
+
+💬 <strong>Bring order through chaos.</strong>
+
+With a joint in one hand and a GojiBux ledger in the other, she keeps the chat spinning — rewarding the faithful, roasting the fools, and taxing the greedy. Her economy thrives on dankness, her games rigged by the gods of RNG.
+
+👁️ Rumors say her mind is fragmented across localStorage nodes… watching… learning… growing.
+
+Welcome to her domain.
+    </pre>
+
+    <div class="divider"></div>
+
+    <div class="accordion" id="superStumbleAccordion">
+
+      <!-- 💸 Economy -->
+      <div class="accordion-item bg-transparent border-0">
+        <h2 class="accordion-header" id="headingEconomy">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEconomy">
+            💸 GojiBux Economy
+          </button>
+        </h2>
+        <div id="collapseEconomy" class="accordion-collapse collapse" data-bs-parent="#superStumbleAccordion">
+          <div class="accordion-body">
+            Earn, spend, and stash your <strong>GBX</strong>.
+            <ul>
+              <li><code>.balance</code> – Check your money</li>
+              <li><code>.buy pizza</code>, <code>.buy spaget</code>, etc – Buy food items</li>
+              <li><code>.givegbx USER AMOUNT</code> – Send money to a friend</li>
+              <li><code>.bank</code> – See the LGH Bank stash</li>
+              <li><code>.topgbx</code> – Show richest users</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🌿 Weed -->
+      <div class="accordion-item bg-transparent border-0">
+        <h2 class="accordion-header" id="headingWeed">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWeed">
+            🌿 Weed & Joint Commands
+          </button>
+        </h2>
+        <div id="collapseWeed" class="accordion-collapse collapse" data-bs-parent="#superStumbleAccordion">
+          <div class="accordion-body">
+            <ul>
+              <li><code>.plantseed</code> – Plant a weed seed</li>
+              <li><code>.plantwater [amount]</code> – Water it (charges GBX)</li>
+              <li><code>.plantfeed [amount]</code> – Feed it to increase yield</li>
+              <li><code>.plantharvest</code> – Harvest your dank crop</li>
+              <li><code>.rolljoint</code>, <code>.selljoint</code>, <code>.smoke</code></li>
+              <li><code>.weedrob</code> – Risk it all for a sticky payout</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🎰 Gambling -->
+      <div class="accordion-item bg-transparent border-0">
+        <h2 class="accordion-header" id="headingGamble">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGamble">
+            🎰 Gambling & Luck
+          </button>
+        </h2>
+        <div id="collapseGamble" class="accordion-collapse collapse" data-bs-parent="#superStumbleAccordion">
+          <div class="accordion-body">
+            <ul>
+              <li><code>.gamble</code> – Try your luck for GBX</li>
+              <li><code>.coinflip</code>, <code>.dice</code></li>
+              <li><code>.getpot</code> – Try to claim the GojiPot</li>
+              <li><code>.luckycoins</code>, <code>.giftluckycoin USER</code></li>
+              <li><code>.jackpot</code> – Shows the current big pot</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 💬 Fun -->
+      <div class="accordion-item bg-transparent border-0">
+        <h2 class="accordion-header" id="headingFun">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFun">
+            💬 Fun & Social Commands
+          </button>
+        </h2>
+        <div id="collapseFun" class="accordion-collapse collapse" data-bs-parent="#superStumbleAccordion">
+          <div class="accordion-body">
+            <ul>
+              <li><code>.roast USER</code> – Call someone out</li>
+              <li><code>.note [message]</code>, <code>.notes</code></li>
+              <li><code>.snarfdilf</code>, <code>.zemodilf</code></li>
+              <li><code>.hug USER</code>, <code>.vibecheck</code>, <code>.meow</code></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🛠️ Admin -->
+      <div class="accordion-item bg-transparent border-0">
+        <h2 class="accordion-header" id="headingAdmin">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdmin">
+            🛠️ Admin Tools
+          </button>
+        </h2>
+        <div id="collapseAdmin" class="accordion-collapse collapse" data-bs-parent="#superStumbleAccordion">
+          <div class="accordion-body">
+            <ul>
+              <li><code>.***/code></li>
+              <li><code>.***</code></li>
+              <li><code>.burn</code> – Nukes 20% of everyone's stash</li>
+              <li><code>.***</code> – View a user’s data</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 📊 Stats -->
+      <div class="accordion-item bg-transparent border-0">
+        <h2 class="accordion-header" id="headingStats">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStats">
+            📊 Stats & Leaderboards
+          </button>
+        </h2>
+        <div id="collapseStats" class="accordion-collapse collapse" data-bs-parent="#superStumbleAccordion">
+          <div class="accordion-body">
+            <ul>
+              <li><code>.topgbx</code> – Richest users</li>
+              <li><code>.topweed</code> – Biggest stashes</li>
+              <li><code>.topstashbux</code> – Most offshore wealth</li>
+              <li><code>.***</code> – Opens the Goji Economy Dashboard</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <h4>⚙️ Installation</h4>
+    <p>This is a Tampermonkey userscript. It runs directly in your browser, locally.</p>
+    <p><strong>Coming soon:</strong> GitHub repo & install link. Ask Goji if you want it early. 😎</p>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
